@@ -10,14 +10,14 @@ imgfile = 'static/images/image.png'
 model_id = "runwayml/stable-diffusion-v1-5"
 # model_id = "CompVis/stable-diffusion-v1-4"
 
-device = "cuda"
+device = "cpu"
 
 # add parameter torch_dtype=torch.float16 to limit VRAM to 4GB
 # pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
 pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
 pipe = pipe.to(device)
 
-def generate_image(text="a photo of an astronaut riding a horse on mars", steps=1, use_gpu=True):
+def generate_image(text="a photo of an astronaut riding a horse on mars", steps=1, use_gpu=False):
     global pipe, device
     
     print('Prompt:', text)
@@ -55,5 +55,3 @@ def generate_image(text="a photo of an astronaut riding a horse on mars", steps=
     image.save(imgfile)
     
     return imgfile
-    
-    

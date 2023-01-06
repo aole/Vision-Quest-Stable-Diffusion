@@ -11,7 +11,7 @@ app = Flask(__name__)
 def generate():
   text = request.form['prompt']
   steps = int(request.form['steps'])
-  use_gpu = request.form['usegpu'] == 'true'
+  use_gpu = request.form['usegpu'].lower() == 'true'
   '''
   def generate_updates():
     for update in generate_image(text, steps):

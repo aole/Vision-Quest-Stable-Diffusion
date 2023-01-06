@@ -5,27 +5,32 @@
   <link rel="stylesheet" href="/static/css/style.css?v={{ cache_busting_param }}">
 </head>
 <body>
-    <form id="form" method="POST">
-        <textarea name="prompt" placeholder="Enter text" cols="50" rows="5">a photo of an astronaut riding a horse on mars</textarea>
-        <div class="slider-container">
+    <div id="container">
+      <div id="tools-panel">
+        <form id="form" method="POST">
+          <textarea name="prompt" placeholder="Enter text" rows="5">a photo of an astronaut riding a horse on mars</textarea>
+          <div class="slider-container">
             <input type="range" name="steps" min="1" max="100" value="1">
             <div id="steps-value">1</div>
             <label for="use-gpu">Use GPU</label><input type="checkbox" id="use-gpu" name="use-gpu">
+          </div>
+          <button type="submit">Generate</button>
+        </form>
+        <HR>
+        <div class="slider-container">
+          <input type="range" name="pen-width" min="1" max="100" value="5">
+          <div id="pen-width-value">5</div>
+          <label for="pen-width">Pen Width</label>
         </div>
-        <button type="submit">Generate</button>
-    </form>
-    <div class="slider-container">
-        <input type="range" name="pen-width" min="1" max="100" value="5">
-        <div id="pen-width-value">5</div>
-        <label for="pen-width">Pen Width</label>
-    </div>
-    <div class="color-picker-container">
-        <label for="color-picker">Pen Color</label>
-        <input type="color" id="color-picker" name="color-picker" value="#000000">
-    </div>
-    <button id="clear-button" type="button">Clear</button>
-    <canvas id="canvas" width="512" height="512"></canvas>
-    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-    <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
+        <div class="color-picker-container">
+          <label for="color-picker">Pen Color</label>
+          <input type="color" id="color-picker" name="color-picker" value="#000000">
+        </div>
+        <button id="clear-button" type="button">Clear</button>
+      </div>
+      <canvas id="canvas" width="512" height="512"></canvas>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+  <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
 </body>
 </html>

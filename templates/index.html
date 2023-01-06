@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Generator</title>
+  <link rel="stylesheet" href="/static/css/style.css?v={{ cache_busting_param }}">
+</head>
+<body>
+  <form id="form" method="POST">
+    <textarea name="prompt" placeholder="Enter text" cols="50" rows="5">a photo of an astronaut riding a horse on mars</textarea>
+    <div class="slider-container">
+        <input type="range" name="steps" min="1" max="100" value="3">
+        <div id="steps-value">3</div>
+		<label for="use-gpu">Use GPU</label><input type="checkbox" id="use-gpu" name="use-gpu" checked>
+    </div>
+    <button type="submit">Generate</button>
+    <progress id="progress" max="100" value="0"></progress>
+  </form>
+  <!--img id="image" src="/static/images/image.png?v={{ cache_busting_param }}" alt="Generated image"-->
+  <canvas id="canvas" width="512" height="512"></canvas>
+  <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
+</body>
+</html>

@@ -1,11 +1,13 @@
 $(document).ready(function() {
+	var cacheBustingParam = Date.now();
+
   // Create a new image object and set its src property
   var img = new Image();
-  img.src = '/static/images/image.png';
+  img.src = '/static/images/image.png?v=' + cacheBustingParam;
 
   // Get the canvas element and its context
   var canvas = $('#canvas')[0];
-  var ctx = canvas.getContext('2d');
+  var ctx = canvas.getContext('2d', { alpha: true });
 
   // Draw the image on the canvas when it finishes loading
   img.onload = function() {
@@ -13,15 +15,17 @@ $(document).ready(function() {
   }
 
   // Set up the temporary image
-  var tempCanvas = document.createElement('canvas');
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  var tempCtx = tempCanvas.getContext('2d');
+  // var tempCanvas = document.createElement('canvas');
+  var tempCanvas = new OffscreenCanvas(512, 512);
+  //tempCanvas.width = canvas.width;
+  //tempCanvas.height = canvas.height;
+  var tempCtx = tempCanvas.getContext('2d', { alpha: true });
+  // tempCtx.fillRect(0, 0, 512, 512);
   
   var previousX, previousY;
   
   // Set the pen width to the value of the pen-width slider
-  tempCtx.lineWidth = $('[name=pen-width]').val();
+  var lineWidth = $('[name=pen-width]').val();
 
   // Update the pen-width value display
   $('#pen-width-value').html($('[name=pen-width]').val());
@@ -38,7 +42,7 @@ $(document).ready(function() {
   // Set up an input event handler for the pen-width slider
   $('[name=pen-width]').on('input', function(event) {
     // Set the pen width to the value of the pen-width slider
-    tempCtx.lineWidth = $(this).val();
+    lineWidth = $(this).val();
     // Update the pen-width value display
     $('#pen-width-value').html($(this).val());
   });
@@ -63,23 +67,37 @@ $(document).ready(function() {
       var distance = Math.sqrt(dx * dx + dy * dy);
 
       // Calculate the number of intermediate points to draw
-      var steps = distance / (tempCtx.lineWidth / 2);
+      var steps = Math.max(Math.abs(dx), Math.abs(dy)); //distance / (tempCtx.lineWidth / 2);
 
       // Calculate the x and y increments for each intermediate point
       var xIncrement = dx / steps;
       var yIncrement = dy / steps;
-
-      // Draw intermediate points between the current and previous cursor positions
-      for (var i = 0; i < steps; i++) {
-        tempCtx.beginPath();
-        tempCtx.arc(previousX + xIncrement * i, previousY + yIncrement * i, tempCtx.lineWidth / 2, 0, 2 * Math.PI);
-        tempCtx.fill();
-      }
-
+	  
+	  if ($('#draw-button').hasClass('active')) { // Left mouse button in draw mode
+		tempCtx.globalCompositeOperation = "source-over";
+		// tempCtx.fillStyle = "rgba(0, 0, 200, 0.1)";
+		// Draw a line between the current and previous cursor positions
+		  for (var i = 0; i < steps; i++) {
+			tempCtx.beginPath();
+			tempCtx.arc(previousX + xIncrement * i, previousY + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			tempCtx.fill();
+		  }
+	  }
+	  else if ($('#erase-button').hasClass('active')) { // Left mouse button in erase mode
+		tempCtx.globalCompositeOperation = "destination-out";
+		// tempCtx.fillStyle = "rgba(0, 0, 0, 1)"; // Use a transparent color to erase
+		// Erase a line between the current and previous cursor positions
+		  for (var i = 0; i < steps; i++) {
+			tempCtx.beginPath();
+			tempCtx.arc(previousX + xIncrement * i, previousY + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			tempCtx.fill();
+		  }
+	  }
       // Save the current cursor position as the previous position
       previousX = x;
       previousY = y;
       
+      ctx.drawImage(img, 0, 0);
       // Draw the temporary image on top of the canvas
       ctx.drawImage(tempCanvas, 0, 0);
     }
@@ -88,15 +106,32 @@ $(document).ready(function() {
   // Set up the mouseup event handler
   canvas.addEventListener('mouseup', function(event) {
     if (event.button === 0) { // Only stop drawing if the left mouse button is released
-      tempCtx.closePath();
+      // tempCtx.closePath();
     }
   });
-    $('#clear-button').click(function() {
-    // Clear the temporary image
-    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-    // Redraw the original image on the canvas
-    ctx.drawImage(img, 0, 0);
-  });
+  
+  // Set up the click event handler for the mode buttons
+$('#mode-buttons button').click(function(event) {
+  // Remove the active class from all buttons
+  $('#mode-buttons button').toggleClass('active', false);
+  // Add the active class to the clicked button
+  $(this).toggleClass('active', true);
+});
+
+	$('#clear-button').click(function() {
+		// Create a new image object
+		var img = new Image();
+		img.src = '/static/images/image.png';
+
+		// When the image finishes loading, redraw it on the canvas
+		img.onload = function() {
+		// Clear the temporary image
+		tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+		// Redraw the original image on the canvas
+		ctx.drawImage(img, 0, 0);
+		}
+	});
+
 
   $('#form').submit(function(event) {
     event.preventDefault();

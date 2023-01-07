@@ -12,3 +12,40 @@
 #canvas {
   margin-left: 20px;
 }
+
+#mode-buttons {
+  display: flex;
+}
+
+#mode-buttons button {
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 8px 16px;
+  margin: 0 8px 0 0;
+  cursor: pointer;
+  outline: none;
+}
+
+#mode-buttons button:active,
+#mode-buttons button:focus {
+  background: #ddd;
+  color: #333;
+}
+
+#mode-buttons button:before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+#mode-buttons button.active:before {
+  background: #666;
+}

@@ -1,6 +1,6 @@
 # stable_diffusion.py
 
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
 import torch
 import tempfile
 import torch

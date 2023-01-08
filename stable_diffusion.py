@@ -12,12 +12,7 @@ model_id = "runwayml/stable-diffusion-v1-5"
 
 device = "cpu"
 
-# add parameter torch_dtype=torch.float16 to limit VRAM to 4GB
-# pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
-pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
-pipe = pipe.to(device)
-
-def generate_image(text="a photo of an astronaut riding a horse on mars", steps=1, use_gpu=False):
+def generate_image(text="a photo of an astronaut riding a horse on mars", img=None, steps=1, use_gpu=False):
     global pipe, device
     
     print('Prompt:', text)
@@ -26,11 +21,16 @@ def generate_image(text="a photo of an astronaut riding a horse on mars", steps=
     
     if not use_gpu and device=='cuda':
         device = "cpu"
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
-        pipe = pipe.to(device)
     elif use_gpu and device=='cpu':
         device = "cuda"
+    
+    if img==None:
+        # add parameter torch_dtype=torch.float16 to limit VRAM to 4GB
+        # pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
         pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
+        pipe = pipe.to(device)
+    else:
+        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
         pipe = pipe.to(device)
     '''
     def callback_fn(step: int, timestep: int, latents: torch.FloatTensor):
@@ -47,9 +47,11 @@ def generate_image(text="a photo of an astronaut riding a horse on mars", steps=
     # pipe.set_progress_bar_config(disable=None)
     # pipe.enable_attention_slicing()
     
-    #image = pipe(text, num_inference_steps=steps, callback=callback_fn, callback_steps=1).images[0]
-    image = pipe(text, num_inference_steps=steps).images[0]
-
+    if img==None:
+        #image = pipe(text, num_inference_steps=steps, callback=callback_fn, callback_steps=1).images[0]
+        image = pipe(prompt=text, num_inference_steps=steps).images[0]
+    else:
+        image = pipe(prompt=text, image=img, num_inference_steps=steps).images[0]
     # assert callback_fn.has_been_called
         
     image.save(imgfile)

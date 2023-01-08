@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Image Generator</title>
+  <title>Vision Quest</title>
   <link rel="stylesheet" href="/static/css/style.css?v={{ cache_busting_param }}">
 </head>
 <body>
+	<h1><center>Vision Quest</center></h1>
     <div id="container">
       <div id="tools-panel">
         <form id="form" method="POST">
@@ -18,12 +19,12 @@
         </form>
         <HR>
 		<!-- Add four toggle buttons to the panel -->
-<div id="mode-buttons">
-  <button id="draw-button" type="button" class="active">Draw</button>
-  <button id="erase-button" type="button">Erase</button>
-  <button id="select-button" type="button">Select</button>
-  <button id="mask-button" type="button">Mask</button>
-</div>
+		<div id="mode-buttons">
+		  <button id="draw-button" type="button" class="active">Draw</button>
+		  <button id="erase-button" type="button">Erase</button>
+		  <button id="select-button" type="button">Select</button>
+		  <button id="mask-button" type="button">Mask</button>
+		</div>
         <div class="slider-container">
           <label for="pen-width">Pen Width</label>
           <input type="range" name="pen-width" min="1" max="100" value="30">

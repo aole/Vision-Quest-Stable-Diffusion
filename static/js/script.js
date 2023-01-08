@@ -1,3 +1,5 @@
+// script.js
+
 $(document).ready(function() {
 	var cacheBustingParam = Date.now();
 
@@ -15,12 +17,8 @@ $(document).ready(function() {
   }
 
   // Set up the temporary image
-  // var tempCanvas = document.createElement('canvas');
   var tempCanvas = new OffscreenCanvas(512, 512);
-  //tempCanvas.width = canvas.width;
-  //tempCanvas.height = canvas.height;
   var tempCtx = tempCanvas.getContext('2d', { alpha: true });
-  // tempCtx.fillRect(0, 0, 512, 512);
   
   var previousX, previousY;
   
@@ -75,7 +73,6 @@ $(document).ready(function() {
 	  
 	  if ($('#draw-button').hasClass('active')) { // Left mouse button in draw mode
 		tempCtx.globalCompositeOperation = "source-over";
-		// tempCtx.fillStyle = "rgba(0, 0, 200, 0.1)";
 		// Draw a line between the current and previous cursor positions
 		  for (var i = 0; i < steps; i++) {
 			tempCtx.beginPath();
@@ -85,7 +82,6 @@ $(document).ready(function() {
 	  }
 	  else if ($('#erase-button').hasClass('active')) { // Left mouse button in erase mode
 		tempCtx.globalCompositeOperation = "destination-out";
-		// tempCtx.fillStyle = "rgba(0, 0, 0, 1)"; // Use a transparent color to erase
 		// Erase a line between the current and previous cursor positions
 		  for (var i = 0; i < steps; i++) {
 			tempCtx.beginPath();
@@ -103,44 +99,44 @@ $(document).ready(function() {
     }
   });
 
-  // Set up the mouseup event handler
-  canvas.addEventListener('mouseup', function(event) {
-    if (event.button === 0) { // Only stop drawing if the left mouse button is released
-      // tempCtx.closePath();
-    }
-  });
+	// Set up the mouseup event handler
+	canvas.addEventListener('mouseup', function(event) {
+		if (event.button === 0) { // Only stop drawing if the left mouse button is released
+		  // tempCtx.closePath();
+		}
+	});
   
-  // Set up the click event handler for the mode buttons
-$('#mode-buttons button').click(function(event) {
-  // Remove the active class from all buttons
-  $('#mode-buttons button').toggleClass('active', false);
-  // Add the active class to the clicked button
-  $(this).toggleClass('active', true);
-});
+	// Set up the click event handler for the mode buttons
+	$('#mode-buttons button').click(function(event) {
+	  // Remove the active class from all buttons
+	  $('#mode-buttons button').toggleClass('active', false);
+	  // Add the active class to the clicked button
+	  $(this).toggleClass('active', true);
+	});
 
 	$('#clear-button').click(function() {
-		// Create a new image object
-		var img = new Image();
-		img.src = '/static/images/image.png';
-
 		// When the image finishes loading, redraw it on the canvas
-		img.onload = function() {
-		// Clear the temporary image
-		tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-		// Redraw the original image on the canvas
-		ctx.drawImage(img, 0, 0);
-		}
+		//img.onload = function() {
+			// Clear the temporary image
+			tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+			// Redraw the original image on the canvas
+			ctx.drawImage(img, 0, 0);
+		//}
 	});
 
 
   $('#form').submit(function(event) {
     event.preventDefault();
+	
+    var canvas = $('#canvas')[0];
+    // Convert the canvas to a data URL
+    var dataURL = canvas.toDataURL();
+
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/generate');
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onload = function() {
       if (xhr.status === 200) {
-        var img = new Image();
         img.src = xhr.responseText;
         var ctx = $('#canvas')[0].getContext('2d');
         img.onload = function() {
@@ -151,7 +147,8 @@ $('#mode-buttons button').click(function(event) {
     };
     xhr.send('prompt=' + encodeURIComponent($('[name=prompt]').val())
       + '&steps=' + encodeURIComponent($('[name=steps]').val())
-      + '&usegpu=' + encodeURIComponent($('[name=use-gpu]').is(':checked')));
+      + '&usegpu=' + encodeURIComponent($('[name=use-gpu]').is(':checked'))
+      + '&image=' + encodeURIComponent(dataURL));
   });
 
   $('[name=steps]').on('input', function(event) {

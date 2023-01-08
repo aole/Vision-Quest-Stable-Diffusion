@@ -3,6 +3,23 @@
   justify-content: center;
 }
 
+.slider-container {
+  display: flex;
+}
+
+.slider-container label {
+  flex: 20%;
+}
+
+.slider-container span {
+  flex: 20%;
+  text-align: center;  /* Center the text within the element */
+}
+
+.slider-container input {
+  flex: 60%;
+}
+
 #tools-panel {
   width: 20%;
   background-color: #f1f1f1;

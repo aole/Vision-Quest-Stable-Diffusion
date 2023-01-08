@@ -11,10 +11,11 @@
         <form id="form" method="POST">
           <textarea name="prompt" placeholder="Enter text" rows="5">a photo of an astronaut riding a horse on mars</textarea>
           <div class="slider-container">
-            <input type="range" name="steps" min="1" max="100" value="1">
-            <div id="steps-value">1</div>
-            <label for="use-gpu">Use GPU</label><input type="checkbox" id="use-gpu" name="use-gpu">
+            <label for="steps">Steps</label>
+            <input type="range" name="steps" min="1" max="100" value="25">
+            <span id="steps-value">25</span>
           </div>
+            <label for="use-gpu">Use GPU</label><input type="checkbox" id="use-gpu" name="use-gpu" checked>
           <button type="submit">Generate</button>
         </form>
         <HR>
@@ -28,13 +29,14 @@
         <div class="slider-container">
           <label for="pen-width">Pen Width</label>
           <input type="range" name="pen-width" min="1" max="100" value="30">
-          <div id="pen-width-value">30</div>
+          <span id="pen-width-value">30</span>
         </div>
         <div class="color-picker-container">
           <label for="color-picker">Pen Color</label>
           <input type="color" id="color-picker" name="color-picker" value="#000000">
         </div>
         <button id="clear-button" type="button">Clear</button>
+        <button id="clear-mask-button" type="button">Clear Mask</button>
       </div>
       <canvas id="canvas" width="512" height="512"></canvas>
   </div>

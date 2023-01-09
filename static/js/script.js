@@ -1,200 +1,242 @@
-// script.js
 
-$(document).ready(function() {
-	var cacheBustingParam = Date.now();
 
-  // Create a new image object and set its src property
-  var img = new Image();
-  img.src = '/static/images/image.png?v=' + cacheBustingParam;
+var spacebarDown = false;
 
-  // Get the canvas element and its context
-  var canvas = $('#canvas')[0];
-  var ctx = canvas.getContext('2d', { alpha: true });
+var renderBoxWidth = 512;
+var renderBoxHeight = 512;
 
-  // Draw the image on the canvas when it finishes loading
-  img.onload = function() {
-    ctx.drawImage(img, 0, 0);
+let scale = 1.0;
+
+// Get parent element
+var parent = document.getElementById("center-panel");
+
+// Get canvas element
+var canvas = document.getElementById("visCanvas");
+
+// Set canvas dimensions to match parent element
+canvas.width = parent.offsetWidth;
+canvas.height = parent.offsetHeight;
+
+// Get canvas context
+var ctx = canvas.getContext("2d");
+
+// image layers
+var layers = [];
+var layerCtrl = document.getElementById("layers");
+
+// Set up image for rendering
+var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
+var renderCtx = renderCanvas.getContext('2d');
+renderCtx.fillText("Render", 10, 20);
+addLayer(renderCanvas, "Render");
+
+// Set up image for drawing
+var drawCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
+var drawCtx = drawCanvas.getContext('2d');
+drawCtx.fillText("Draw", 10, 40);
+addLayer(drawCanvas, "Draw/Paint");
+
+// Set up image for masking
+var maskCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
+var maskCtx = maskCanvas.getContext('2d');
+maskCtx.fillText("Draw", 10, 40);
+addLayer(maskCanvas, "Mask");
+layerCtrl.selectedIndex = 1;
+
+var prevX = 0;
+var prevY = 0;
+// Set up panning
+var panX = canvas.width/2 - renderBoxWidth/2;
+var panY = canvas.height/2 - renderBoxHeight/2;
+var panning = false;
+
+function draw() {
+	// Set background color
+	ctx.fillStyle = "#666666";
+
+	// Draw background
+	ctx.fillRect(0, 0, canvas.width/scale, canvas.height/scale);
+
+	
+	// Draw grid
+	ctx.lineWidth = 1;
+
+	// Set line color
+	ctx.strokeStyle = "#55555588";
+	// Reset line dash pattern
+	ctx.setLineDash([]);
+
+	// Draw vertical lines
+	for (var x = panX%128; x < canvas.width/scale; x += 128) {
+	  ctx.beginPath();
+	  ctx.moveTo(x, 0);
+	  ctx.lineTo(x, canvas.height/scale);
+	  ctx.stroke();
+	}
+
+	// Draw horizontal lines
+	for (var y = panY%128; y < canvas.height/scale; y += 128) {
+	  ctx.beginPath();
+	  ctx.moveTo(0, y);
+	  ctx.lineTo(canvas.width/scale, y);
+	  ctx.stroke();
+	}
+	
+	// Draw layers onto canvas
+	for (let lyr of layers) {
+		ctx.drawImage(lyr.image, panX, panY);
+	}
+	
+	// Set line color
+	ctx.strokeStyle = "#222";
+	// Set line dash pattern
+	ctx.setLineDash([5, 5]);
+
+	var lyridx = layers.length-layerCtrl.selectedIndex-1;
+	var lyr = layers[lyridx];
+	var w = lyr.image.width;
+	var h = lyr.image.height;
+	
+	// render box
+	ctx.beginPath();
+	ctx.moveTo(panX, panY);
+	ctx.lineTo(panX+w, panY);
+	ctx.lineTo(panX+w, panY+h);
+	ctx.lineTo(panX, panY+h);
+	ctx.closePath();
+	ctx.stroke();
+	
+	// handles
+	ctx.beginPath()
+	ctx.arc(panX+w/2, panY, 10, 0, 2 * Math.PI);
+	ctx.stroke();
+	ctx.beginPath()
+	ctx.arc(panX+w, panY+h/2, 10, 0, 2 * Math.PI);
+	ctx.stroke();
+	ctx.beginPath()
+	ctx.arc(panX+w/2, panY+h, 10, 0, 2 * Math.PI);
+	ctx.stroke();
+	ctx.beginPath()
+	ctx.arc(panX, panY+h/2, 10, 0, 2 * Math.PI);
+	ctx.stroke();
+};
+
+// Set up mousedown event listener
+canvas.addEventListener("mousedown", function(e) {
+  // Check if left mouse button was pressed
+  if (e.button === 0 && spacebarDown) {
+    // Set panning flag
+    panning = true;
+
   }
 
-  // Set up the temporary image for drawing
-  var drawCanvas = new OffscreenCanvas(512, 512);
-  var drawCtx = drawCanvas.getContext('2d', { alpha: true });
-  
-  // Set up the temporary image for masking
-  var maskCanvas = document.createElement('canvas');
-  maskCanvas.width = canvas.width;
-  maskCanvas.height = canvas.height;
-  var maskCtx = maskCanvas.getContext('2d', { alpha: true });
-  var maskColor = '#FFF';
-    maskCtx.strokeStyle = maskColor;
-    maskCtx.fillStyle = maskColor;
-  var usemask = false;
-  
-  var previousX, previousY;
-  
-  // Set the pen width to the value of the pen-width slider
-  var lineWidth = $('[name=pen-width]').val();
+ prevX = e.clientX;
+ prevY = e.clientY;
+});
 
-  // Update the pen-width value display
-  $('#pen-width-value').html($('[name=pen-width]').val());
-  
-  // Set up the change event handler for the color picker
-  $('#color-picker').on('change', function(event) {
-    // Get the chosen color
-    var color = $(this).val();
-    // Set the pen color to the chosen color
-    drawCtx.strokeStyle = color;
-    drawCtx.fillStyle = color;
-  });
+// Set up mousemove event listener
+canvas.addEventListener("mousemove", function(e) {
+  // Check if panning is enabled
+  if (panning && spacebarDown) {
+    // Calculate difference between starting position and current position
+    panX += e.clientX - prevX;
+    panY += e.clientY - prevY;
 
-  // Set up an input event handler for the pen-width slider
-  $('[name=pen-width]').on('input', function(event) {
-    // Set the pen width to the value of the pen-width slider
-    lineWidth = $(this).val();
-    // Update the pen-width value display
-    $('#pen-width-value').html($(this).val());
-  });
+    draw();
+  }
 
-  // Set up the mousedown event handler
-  canvas.addEventListener('mousedown', function(event) {
-    if (event.button === 0) { // Only start drawing if the left mouse button is pressed
-        previousX = event.offsetX;
-        previousY = event.offsetY;
-    }
-  });
+	 prevX = e.clientX;
+	 prevY = e.clientY;
+});
 
-  // Set up the mousemove event handler
-  canvas.addEventListener('mousemove', function(event) {
-    if (event.buttons === 1) { // Only draw if the left mouse button is being held down
-		var x = event.offsetX;
-		var y = event.offsetY;
+// Set up mouseup event listener
+canvas.addEventListener("mouseup", function(e) {
+  // Check if left mouse button was released
+  if (e.button === 0) {
+    // Reset panning flag
+    panning = false;
+  }
+});
 
-		// Calculate the distance between the current and previous cursor positions
-		var dx = x - previousX;
-		var dy = y - previousY;
-		var distance = Math.sqrt(dx * dx + dy * dy);
+layerCtrl.addEventListener("change", function() {
+  draw();
+});
 
-		// Calculate the number of intermediate points to draw
-		var steps = Math.max(Math.abs(dx), Math.abs(dy)); //distance / (drawCtx.lineWidth / 2);
-
-		// Calculate the x and y increments for each intermediate point
-		var xIncrement = dx / steps;
-		var yIncrement = dy / steps;
-
-		if ($('#draw-button').hasClass('active')) { // Left mouse button in draw mode
-		drawCtx.globalCompositeOperation = "source-over";
-		// Draw a line between the current and previous cursor positions
-		  for (var i = 0; i < steps; i++) {
-			drawCtx.beginPath();
-			drawCtx.arc(previousX + xIncrement * i, previousY + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
-			drawCtx.fill();
-		  }
-		}
-		else if ($('#erase-button').hasClass('active')) { // Left mouse button in erase mode
-		drawCtx.globalCompositeOperation = "destination-out";
-		// Erase a line between the current and previous cursor positions
-		  for (var i = 0; i < steps; i++) {
-			drawCtx.beginPath();
-			drawCtx.arc(previousX + xIncrement * i, previousY + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
-			drawCtx.fill();
-		  }
-		}
-		else if ($('#mask-button').hasClass('active')) { // Left mouse button in mask mode
-		drawCtx.globalCompositeOperation = "source-over";
-		// Mask a line between the current and previous cursor positions
-		  for (var i = 0; i < steps; i++) {
-			maskCtx.beginPath();
-			maskCtx.arc(previousX + xIncrement * i, previousY + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
-			maskCtx.fill();
-		  }
-		  usemask = true;
-		}
-		// Save the current cursor position as the previous position
-		previousX = x;
-		previousY = y;
-
-		ctx.drawImage(img, 0, 0);
-		// Draw the draw image on top of the canvas
-		ctx.drawImage(drawCanvas, 0, 0);
-		// Draw the mask image on top of the canvas
-		ctx.globalAlpha = 0.5;
-		ctx.drawImage(maskCanvas, 0, 0);
-		ctx.globalAlpha = 1;
-    }
-  });
-
-	// Set up the mouseup event handler
-	canvas.addEventListener('mouseup', function(event) {
-		if (event.button === 0) { // Only stop drawing if the left mouse button is released
-		  // drawCtx.closePath();
-		}
-	});
-  
-	// Set up the click event handler for the mode buttons
-	$('#mode-buttons button').click(function(event) {
-	  // Remove the active class from all buttons
-	  $('#mode-buttons button').toggleClass('active', false);
-	  // Add the active class to the clicked button
-	  $(this).toggleClass('active', true);
-	});
-
-	$('#clear-button').click(function() {
-		// Clear the temporary image
-		drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-		// Redraw the original image on the canvas
-		ctx.drawImage(img, 0, 0);
-		ctx.globalAlpha = 0.5;
-		ctx.drawImage(maskCanvas, 0, 0);
-		ctx.globalAlpha = 1;
-		usemask = false;
-	});
-
-	$('#clear-mask-button').click(function() {
-		// Clear the mask image
-		maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-		// Redraw the original image on the canvas
-		ctx.drawImage(img, 0, 0);
-		ctx.drawImage(drawCanvas, 0, 0);
-	});
-
-
-  $('#form').submit(function(event) {
-    event.preventDefault();
+function addLayer(img, name='') {
+	if (name=='')
+		name = 'Layer'+(layers.length+1);
+	layers.push({name: name, image: img});
 	
-	// Redraw the original image on the canvas
-	ctx.drawImage(img, 0, 0);
-	ctx.drawImage(drawCanvas, 0, 0);
-	
-    // Convert the canvas to a data URL
-    var dataURL = canvas.toDataURL();
-    // Convert the mask to a data URL
-    var maskURL = maskCanvas.toDataURL();
+	layerCtrl.options.length = 0;
+	for (let i=layers.length-1; i>=0; i--) {
+		var lyr = layers[i];
+		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
+	}
+	layerCtrl.selectedIndex = 0;
+}
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/generate');
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        img.src = xhr.responseText;
-        var ctx = $('#canvas')[0].getContext('2d');
-        img.onload = function() {
-            ctx.drawImage(img, 0, 0);
-            ctx.drawImage(drawCanvas, 0, 0);
-			ctx.globalAlpha = 0.5;
-			ctx.drawImage(maskCanvas, 0, 0);
-			ctx.globalAlpha = 1;
-        }
-      }
-    };
-    xhr.send('prompt=' + encodeURIComponent($('[name=prompt]').val())
-      + '&steps=' + encodeURIComponent($('[name=steps]').val())
-      + '&usegpu=' + encodeURIComponent($('[name=use-gpu]').is(':checked'))
-      + '&usemask=' + usemask
-      + '&image=' + encodeURIComponent(dataURL)
-      + '&mask=' + encodeURIComponent(maskURL));
-  });
+// Add event listener for dropped files
+canvas.ondrop = function(e) {
+  e.preventDefault();
 
-  $('[name=steps]').on('input', function(event) {
-    $('#steps-value').html($(this).val());
-  });
+  // Get dropped file
+  var file = e.dataTransfer.files[0];
+
+  // Create FileReader to read file
+  var reader = new FileReader();
+
+  // Set onload event listener for reader
+  reader.onload = function() {
+    // Get data URL of file
+    var dataURL = reader.result;
+
+	var img = document.createElement("img")
+	// Set onload event listener for image element
+	img.onload = function() {
+		addLayer(img);
+		draw();
+	}
+    // Set src of image to data URL
+    img.src = dataURL;
+  }
+
+  // Read file as data URL
+  reader.readAsDataURL(file);
+}
+
+// Add event listener for dragged files
+canvas.ondragover = function(e) {
+  e.preventDefault();
+}
+
+window.onload = function(e) {
+	draw();
+}
+
+document.addEventListener('keydown', function(e) {
+	if (e.key === ' ') {
+		spacebarDown = true;
+		canvas.style.cursor = "grab";
+	}
+});
+
+document.addEventListener('keyup', function(e) {
+	if (e.key === ' ') {
+		spacebarDown = false;
+		canvas.style.cursor = "default";
+	}
+});
+
+canvas.addEventListener('wheel', function(e) {
+  // Calculate the new scale factor based on the mouse wheel delta
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale *= delta;
+
+  // Clamp the scale to a minimum of 0.1 and a maximum of 10
+  scale = Math.max(0.1, Math.min(scale, 10));
+
+  // Set the transformation matrix for the canvas context
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  
+  draw();
 });

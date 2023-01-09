@@ -1,68 +1,75 @@
-#container {
+html, body {
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
+  width: 100%; /* Make page take up whole visible space */
+  height: 100%; /* Make page take up whole visible space */
+}
+
+.container {
   display: flex;
-  justify-content: center;
+  color: white; /* Text color */
+  height: 100%; /* Make container take up whole visible space */
 }
 
-.slider-container {
+.container-slider {
   display: flex;
+  width: 100%; /* Make container take up whole visible space */
 }
 
-.slider-container label {
-  flex: 20%;
+.left, .center, .right {
+  padding: 20px; /* Padding for panels */
+  box-sizing: border-box; /* Include padding in panel width */
+  height: 100%; /* Make panels take up whole visible space */
 }
 
-.slider-container span {
-  flex: 20%;
-  text-align: center;  /* Center the text within the element */
-}
-
-.slider-container input {
-  flex: 60%;
-}
-
-#tools-panel {
+.left, .right {
   width: 20%;
-  background-color: #f1f1f1;
-  padding: 20px;
+  background-color: #444; /* Even darker background color for left panel */
+  z-index: 1; /* Bring left and right panels to the front */
 }
 
-#canvas {
-  margin-left: 20px;
+.left {
+  box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.3); /* Add box shadow */
 }
 
-#mode-buttons {
-  display: flex;
+.right {
+  box-shadow: -4px 0px 8px rgba(0, 0, 0, 0.3); /* Add box shadow */
 }
 
-#mode-buttons button {
-  border: none;
-  background: transparent;
-  color: #666;
-  font-size: 14px;
-  font-weight: bold;
-  padding: 8px 16px;
-  margin: 0 8px 0 0;
-  cursor: pointer;
-  outline: none;
+.center {
+  background-color: #555; /* Darker background color for panels */
+  width: 60%;
+  z-index: 0; /* Send center panel to the back */
 }
 
-#mode-buttons button:active,
-#mode-buttons button:focus {
-  background: #ddd;
-  color: #333;
+#prompt, #negative, #generate, #layers {
+	width: 100%;
 }
 
-#mode-buttons button:before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  margin-right: 8px;
-  vertical-align: middle;
+#prompt, #negative {
+	resize: vertical;
+    outline: none;
+	background-color: #445044;
+	color: white;
 }
 
-#mode-buttons button.active:before {
-  background: #666;
+#negative {
+	background-color: #504444;
+}
+
+#layers {
+	background-color: transparent;
+	color: white;
+}
+
+input[type="button"] {
+  font-size: 18px; /* Increase font size */
+  font-weight: bold; /* Use bold font weight */
+  font-family: sans-serif; /* Use a sans-serif font */
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  border: 1px solid black;
 }

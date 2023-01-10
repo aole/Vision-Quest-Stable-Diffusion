@@ -6,6 +6,15 @@ var renderBoxWidth = 512;
 var renderBoxHeight = 512;
 
 let scale = 1.0;
+let handleRadius = 10;
+let handleRadius2 = handleRadius*handleRadius;
+let pickRadius = 5;
+
+let handleMouse = 0; // 0: None, 1: Top, 2: Right, 3: Bottom, 4: Left
+let pickMouse = 0;
+
+let boundsLineWidth = 1;
+let boundsLineWidthHighligh = 3;
 
 // Get parent element
 var parent = document.getElementById("center-panel");
@@ -14,8 +23,8 @@ var parent = document.getElementById("center-panel");
 var canvas = document.getElementById("visCanvas");
 
 // Set canvas dimensions to match parent element
-canvas.width = parent.offsetWidth;
-canvas.height = parent.offsetHeight;
+canvas.width = parent.offsetWidth-40; // padding
+canvas.height = parent.offsetHeight-40; // padding
 
 // Get canvas context
 var ctx = canvas.getContext("2d");
@@ -50,7 +59,13 @@ var panX = canvas.width/2 - renderBoxWidth/2;
 var panY = canvas.height/2 - renderBoxHeight/2;
 var panning = false;
 
+function distance2(x1, y1, x2, y2) {
+    return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
+}
+
 function draw() {
+    ctx.globalCompositeOperation = "source-over"
+    
 	// Set background color
 	ctx.fillStyle = "#666666";
 
@@ -59,7 +74,7 @@ function draw() {
 
 	
 	// Draw grid
-	ctx.lineWidth = 1;
+	ctx.lineWidth = 1/scale;
 
 	// Set line color
 	ctx.strokeStyle = "#55555588";
@@ -87,79 +102,128 @@ function draw() {
 		ctx.drawImage(lyr.image, panX, panY);
 	}
 	
+	// render box
 	// Set line color
-	ctx.strokeStyle = "#222";
+	ctx.strokeStyle = "#EEE";
 	// Set line dash pattern
 	ctx.setLineDash([5, 5]);
+    ctx.lineDashOffset = 0;
 
-	var lyridx = layers.length-layerCtrl.selectedIndex-1;
-	var lyr = layers[lyridx];
-	var w = lyr.image.width;
-	var h = lyr.image.height;
-	
-	// render box
-	ctx.beginPath();
-	ctx.moveTo(panX, panY);
-	ctx.lineTo(panX+w, panY);
-	ctx.lineTo(panX+w, panY+h);
-	ctx.lineTo(panX, panY+h);
-	ctx.closePath();
-	ctx.stroke();
-	
-	// handles
-	ctx.beginPath()
-	ctx.arc(panX+w/2, panY, 10, 0, 2 * Math.PI);
-	ctx.stroke();
-	ctx.beginPath()
-	ctx.arc(panX+w, panY+h/2, 10, 0, 2 * Math.PI);
-	ctx.stroke();
-	ctx.beginPath()
-	ctx.arc(panX+w/2, panY+h, 10, 0, 2 * Math.PI);
-	ctx.stroke();
-	ctx.beginPath()
-	ctx.arc(panX, panY+h/2, 10, 0, 2 * Math.PI);
-	ctx.stroke();
+    for (var i=0; i<2; i++) {
+        var lyridx = layers.length-layerCtrl.selectedIndex-1;
+        var lyr = layers[lyridx];
+        var w = lyr.image.width;
+        var h = lyr.image.height;
+        
+        if (lyr.name != 'Render' && lyr.name != 'Draw/Paint' && lyr.name != 'Mask' && pickMouse!=0) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
+        ctx.beginPath();
+        ctx.moveTo(panX, panY);
+        ctx.lineTo(panX+w, panY);
+        ctx.lineTo(panX+w, panY+h);
+        ctx.lineTo(panX, panY+h);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // handles
+        if (lyr.name != 'Mask' && lyr.name != 'Draw/Paint') {
+            if (handleMouse==1) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
+            ctx.beginPath()
+            ctx.arc(panX+w/2, panY, handleRadius/scale, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            if (handleMouse==2) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
+            ctx.beginPath()
+            ctx.arc(panX+w, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            if (handleMouse==3) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
+            ctx.beginPath()
+            ctx.arc(panX+w/2, panY+h, handleRadius/scale, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            if (handleMouse==4) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
+            ctx.beginPath()
+            ctx.arc(panX, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+        // Set line color
+        ctx.strokeStyle = "#111";
+        // Set line dash pattern
+        ctx.setLineDash([5, 5]);
+        ctx.lineDashOffset = 5;
+    }
 };
 
 // Set up mousedown event listener
 canvas.addEventListener("mousedown", function(e) {
-  // Check if left mouse button was pressed
-  if (e.button === 0 && spacebarDown) {
-    // Set panning flag
-    panning = true;
+    // Check if left mouse button was pressed
+    if (e.button === 0 && spacebarDown) {
+        // Set panning flag
+        panning = true;
+    }
 
-  }
-
- prevX = e.clientX;
- prevY = e.clientY;
+    prevX = e.clientX;
+    prevY = e.clientY;
 });
 
 // Set up mousemove event listener
 canvas.addEventListener("mousemove", function(e) {
-  // Check if panning is enabled
-  if (panning && spacebarDown) {
-    // Calculate difference between starting position and current position
-    panX += e.clientX - prevX;
-    panY += e.clientY - prevY;
+    var x = e.clientX;
+    var y = e.clientY;
+    
+    var offsetX = e.offsetX;
+    var offsetY = e.offsetY;
+    
+    // Check if panning is enabled
+    if (panning && spacebarDown) {
+        // Calculate difference between starting position and current position
+        panX += x - prevX;
+        panY += y - prevY;
 
+        draw();
+    } else {
+        var lyridx = layers.length-layerCtrl.selectedIndex-1;
+        var lyr = layers[lyridx];
+        // if (lyr.name === 'Render') {
+            var w = lyr.image.width;
+            var h = lyr.image.height;
+            
+            var mx = offsetX/scale-panX;
+            var my = offsetY/scale-panY;
+            
+            handleMouse = 0;
+            if (distance2(mx, my, w/2, 0)<handleRadius2) handleMouse = 1;
+            if (distance2(mx, my, w, h/2)<handleRadius2) handleMouse = 2;
+            if (distance2(mx, my, w/2, h)<handleRadius2) handleMouse = 3;
+            if (distance2(mx, my, 0, h/2)<handleRadius2) handleMouse = 4;
+            
+            pickMouse = 0;
+            if (handleMouse===0){
+                if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my)<=pickRadius) pickMouse = 1;
+                if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx)<=pickRadius) pickMouse = 2;
+                if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my-h)<=pickRadius) pickMouse = 3;
+                if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx-w)<=pickRadius) pickMouse = 4;
+            }
+        // }
+    }
+
+    prevX = x;
+    prevY = y;
+    
     draw();
-  }
-
-	 prevX = e.clientX;
-	 prevY = e.clientY;
 });
 
 // Set up mouseup event listener
 canvas.addEventListener("mouseup", function(e) {
-  // Check if left mouse button was released
-  if (e.button === 0) {
-    // Reset panning flag
-    panning = false;
-  }
+    // Check if left mouse button was released
+    if (e.button === 0) {
+        // Reset panning flag
+        panning = false;
+    }
 });
 
 layerCtrl.addEventListener("change", function() {
-  draw();
+    draw();
 });
 
 function addLayer(img, name='') {

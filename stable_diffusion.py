@@ -10,8 +10,15 @@ imgfile = 'static/images/image.png'
 model_id = "runwayml/stable-diffusion-v1-5"
 # model_id = "CompVis/stable-diffusion-v1-4"
 
-device = "cpu"
+device = "cuda"
 
+def sd_txt2img(prompt, negative='', steps=20):
+    pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
+    pipe = pipe.to(device)
+    image = pipe(prompt=prompt, num_inference_steps=steps).images[0]
+    
+    image.save(imgfile)
+    
 def generate_image(text="a photo of an astronaut riding a horse on mars", img=None, msk=None, steps=1, use_gpu=False):
     global pipe, device
     

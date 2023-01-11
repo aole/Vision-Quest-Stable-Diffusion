@@ -1,13 +1,15 @@
 // server.js
 
+var cacheBustingParam = Date.now();
+
 function generate() {
-	const numSteps = document.getElementById('slider-steps').value;
+	const numSteps = document.getElementById('steps-slider').value;
 	const prompt_ = document.getElementById('prompt').value;
 	const negative = document.getElementById('negative').value;
 	
-	console.log(numSteps, prompt_, negative);
+	var mode = 'txt2img';
 	
-	fetch('/txt2img', {
+	fetch(mode, {
 		method: 'POST',
 		body: JSON.stringify({prompt: prompt_, negative: negative, numSteps: numSteps}),
 		headers:{
@@ -16,6 +18,7 @@ function generate() {
 	})
 	.then(response => response.json())
 	.then(data => {
-		console.log(data.image);
+		var url = data.image+'?v=' + cacheBustingParam;
+		updateRenderImage(url);
 	});
 }

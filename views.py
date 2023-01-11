@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, Response, jsonify
-from stable_diffusion import generate_image
+from stable_diffusion import sd_txt2img
 import time, base64
 from PIL import Image
 from io import BytesIO
@@ -20,7 +20,10 @@ def index():
 def txt2img():
   prompt = request.json.get('prompt')
   negative = request.json.get('negative')
-  num_steps = request.json.get('numSteps')
+  num_steps = int(request.json.get('numSteps'))
+  
+  sd_txt2img(prompt, negative, num_steps);
+  
   return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
 
 

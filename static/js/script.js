@@ -1,14 +1,12 @@
 
 var cacheBustingParam = Date.now();
 
-// Create a new image object and set its src property
-var rndrimg = new Image();
-rndrimg.src = '/static/images/image.png?v=' + cacheBustingParam;
-
 var spacebarDown = false;
 
 var renderBoxWidth = 512;
 var renderBoxHeight = 512;
+
+var newDocument = true;
 
 let scale = 1.0;
 let handleRadius = 10;
@@ -42,11 +40,6 @@ var layerCtrl = document.getElementById("layers");
 var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
 var renderCtx = renderCanvas.getContext('2d');
 
-// Draw the image on the canvas when it finishes loading
-rndrimg.onload = function() {
-	renderCtx.drawImage(rndrimg, 0, 0);
-}
-
 addLayer(renderCanvas, "Render");
 
 // Set up image for drawing
@@ -57,7 +50,6 @@ addLayer(drawCanvas, "Draw/Paint");
 // Set up image for masking
 var maskCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
 var maskCtx = maskCanvas.getContext('2d');
-maskCtx.fillText("Draw", 10, 40);
 addLayer(maskCanvas, "Mask");
 layerCtrl.selectedIndex = 1;
 
@@ -70,6 +62,24 @@ var panning = false;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
+}
+
+const steps_slider = document.getElementById('steps-slider');
+steps_slider.oninput = function() {
+  document.getElementById('steps-label').innerText = steps_slider.value;
+}
+
+function updateRenderImage(url) {
+	// Create a new image object and set its src property
+	var rndrimg = new Image();
+	rndrimg.src = url;
+
+	// Draw the image on the canvas when it finishes loading
+	rndrimg.onload = function() {
+		newDocument = false;
+		renderCtx.drawImage(rndrimg, 0, 0);
+		draw();
+	}
 }
 
 function draw() {

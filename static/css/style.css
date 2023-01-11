@@ -17,12 +17,12 @@ html, body {
 }
 
 .left, .center, .right {
-  padding: 20px; /* Padding for panels */
   box-sizing: border-box; /* Include padding in panel width */
   height: 100%; /* Make panels take up whole visible space */
 }
 
 .left, .right {
+  padding: 20px; /* Padding for panels */
   width: 20%;
   background-color: #444; /* Even darker background color for left panel */
   z-index: 1; /* Bring left and right panels to the front */
@@ -40,6 +40,8 @@ html, body {
   background-color: #555; /* Darker background color for panels */
   width: 60%;
   z-index: 0; /* Send center panel to the back */
+  display: flex;
+  flex-direction: row;
 }
 
 #prompt, #negative, #generate, #layers {
@@ -68,6 +70,41 @@ input[type="button"] {
   font-family: sans-serif; /* Use a sans-serif font */
 }
 
+#canvas-container {
+	padding-top: 5px;
+	width: 100%;
+}
 canvas {
   border: 1px solid black;
 }
+
+.toolbar {
+  margin: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  background-color: #555;
+}
+
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #444;
+  color: white;
+  text-align: center;
+}
+
+.selected {
+  background-color: #6f9d6f; /* Lighter background color for selected button */
+}
+
+.toolbar-separator {
+    border-bottom: 2px solid transparent;
+}
+

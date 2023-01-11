@@ -20,14 +20,14 @@ let boundsLineWidth = 1;
 let boundsLineWidthHighligh = 3;
 
 // Get parent element
-var parent = document.getElementById("center-panel");
+var parent = document.getElementById("canvas-container");
 
 // Get canvas element
 var canvas = document.getElementById("visCanvas");
 
 // Set canvas dimensions to match parent element
-canvas.width = parent.offsetWidth-40; // padding
-canvas.height = parent.offsetHeight-40; // padding
+canvas.width = parent.offsetWidth-25; // padding
+canvas.height = parent.offsetHeight-25; // padding
 
 // Get canvas context
 var ctx = canvas.getContext("2d");
@@ -57,8 +57,12 @@ var prevX = 0;
 var prevY = 0;
 // Set up panning
 var panX = canvas.width/2 - renderBoxWidth/2;
-var panY = canvas.height/2 - renderBoxHeight/2;
+var panY = canvas.height/2 - renderBoxHeight/2
+
 var panning = false;
+var drawing = false;
+
+var lineWidth = 5;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -67,6 +71,25 @@ function distance2(x1, y1, x2, y2) {
 const steps_slider = document.getElementById('steps-slider');
 steps_slider.oninput = function() {
   document.getElementById('steps-label').innerText = steps_slider.value;
+}
+
+var buttons = document.querySelectorAll(".draw-group");
+
+var currentTool = "move";
+buttons.forEach(function(button) {
+    button.addEventListener("click", function() {
+        buttons.forEach(function(b){
+            b.classList.remove("selected");
+        });
+        button.classList.add("selected");
+        currentTool = button.getAttribute('data-tool');
+    });
+});
+
+function clearImage() {
+	// Clear the temporary image
+	drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+	draw();
 }
 
 function updateRenderImage(url) {
@@ -188,23 +211,29 @@ function draw() {
 
 // Set up mousedown event listener
 canvas.addEventListener("mousedown", function(e) {
+	panning = drawing = false;
+
+    prevX = e.offsetX;
+    prevY = e.offsetY;
+	
     // Check if left mouse button was pressed
     if (e.button === 0 && spacebarDown) {
         // Set panning flag
         panning = true;
-    }
-
-    prevX = e.clientX;
-    prevY = e.clientY;
+    } else if (e.button === 0 && currentTool === 'brush') {
+		drawing = true;
+		drawCtx.globalCompositeOperation = "source-over";
+		drawCtx.beginPath();
+		drawCtx.arc((prevX-panX), (prevY-panY), lineWidth / 2, 0, 2 * Math.PI);
+		drawCtx.fill();
+		draw();
+	}
 });
 
 // Set up mousemove event listener
 canvas.addEventListener("mousemove", function(e) {
-    var x = e.clientX;
-    var y = e.clientY;
-    
-    var offsetX = e.offsetX;
-    var offsetY = e.offsetY;
+    var x = e.offsetX;
+    var y = e.offsetY;
     
     // Check if panning is enabled
     if (panning && spacebarDown) {
@@ -213,15 +242,35 @@ canvas.addEventListener("mousemove", function(e) {
         panY += y - prevY;
 
         draw();
-    } else {
+    } else if (drawing) {
+		// Calculate the distance between the current and previous cursor positions
+		var dx = x - prevX;
+		var dy = y - prevY;
+		var distance = Math.sqrt(dx * dx + dy * dy);
+
+		// Calculate the number of intermediate points to draw
+		var steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+		// Calculate the x and y increments for each intermediate point
+		var xIncrement = dx / steps;
+		var yIncrement = dy / steps;
+		
+		drawCtx.globalCompositeOperation = "source-over";
+		// Draw a line between the current and previous cursor positions
+		for (var i = 0; i < steps; i++) {
+			drawCtx.beginPath();
+			drawCtx.arc((prevX-panX) + xIncrement * i, (prevY-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			drawCtx.fill();
+		}
+	} else {
         var lyridx = layers.length-layerCtrl.selectedIndex-1;
         var lyr = layers[lyridx];
         // if (lyr.name === 'Render') {
             var w = lyr.image.width;
             var h = lyr.image.height;
             
-            var mx = offsetX/scale-panX;
-            var my = offsetY/scale-panY;
+            var mx = x/scale-panX;
+            var my = y/scale-panY;
             
             handleMouse = 0;
             if (distance2(mx, my, w/2, 0)<handleRadius2) handleMouse = 1;
@@ -250,7 +299,7 @@ canvas.addEventListener("mouseup", function(e) {
     // Check if left mouse button was released
     if (e.button === 0) {
         // Reset panning flag
-        panning = false;
+        panning = drawing = false;
     }
 });
 

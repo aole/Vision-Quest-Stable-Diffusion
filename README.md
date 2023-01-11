@@ -1,7 +1,7 @@
 # Vision Quest
 Web based local AI painting program
 
-
+![screenshot](/docs/images/screenshot01.jpg "Logo Title Text 1")
 
 Uses Stable Diffusion models to generate images from prompts.
 

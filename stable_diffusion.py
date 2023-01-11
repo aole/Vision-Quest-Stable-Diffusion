@@ -16,7 +16,7 @@ def sd_txt2img(prompt, negative='', steps=20):
     print('txt2img', prompt)
     pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, num_inference_steps=steps).images[0]
+    image = pipe(prompt=prompt, num_inference_steps=steps, negative_prompt=negative).images[0]
     
     image.save(imgfile)
 
@@ -24,7 +24,7 @@ def sd_img2img(image, prompt, negative='', steps=20):
     print('img2img', prompt)
     pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, image=image, num_inference_steps=steps).images[0]
+    image = pipe(prompt=prompt, image=image, num_inference_steps=steps, negative_prompt=negative).images[0]
     
     image.save(imgfile)
 

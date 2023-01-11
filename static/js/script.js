@@ -27,7 +27,7 @@ var canvas = document.getElementById("visCanvas");
 
 // Set canvas dimensions to match parent element
 canvas.width = parent.offsetWidth-25; // padding
-canvas.height = parent.offsetHeight-25; // padding
+canvas.height = parent.offsetHeight-65; // padding
 
 // Get canvas context
 var ctx = canvas.getContext("2d");
@@ -62,7 +62,7 @@ var panY = canvas.height/2 - renderBoxHeight/2
 var panning = false;
 var drawing = false;
 
-var lineWidth = 5;
+var lineWidth = 30;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -71,6 +71,12 @@ function distance2(x1, y1, x2, y2) {
 const steps_slider = document.getElementById('steps-slider');
 steps_slider.oninput = function() {
   document.getElementById('steps-label').innerText = steps_slider.value;
+}
+
+const brush_slider = document.getElementById('brush-slider');
+brush_slider.oninput = function() {
+	document.getElementById('brush-label').innerText = brush_slider.value;
+	lineWidth = brush_slider.value;
 }
 
 var buttons = document.querySelectorAll(".draw-group");

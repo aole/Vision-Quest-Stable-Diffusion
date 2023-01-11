@@ -14,6 +14,8 @@ html, body {
 .container-slider {
   display: flex;
   width: 100%; /* Make container take up whole visible space */
+  display: flex;
+  align-items: center
 }
 
 .left, .center, .right {
@@ -70,8 +72,16 @@ input[type="button"] {
   font-family: sans-serif; /* Use a sans-serif font */
 }
 
+#center-right {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+}
+
 #canvas-container {
 	padding-top: 5px;
+	height: 100%;
 	width: 100%;
 }
 canvas {
@@ -79,14 +89,23 @@ canvas {
 }
 
 .toolbar {
-  margin: 5px 10px;
   display: flex;
-  flex-direction: column;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 40px;
   background-color: #555;
+}
+
+.vertical {
+  padding: 55px 10px;
+  flex-direction: column;
+  width: 40px;
+}
+
+.horizontal {
+  padding: 5px 0px;
+  flex-direction: row;
+  height: 40px;
 }
 
 .toolbar-button {
@@ -108,3 +127,5 @@ canvas {
     border-bottom: 2px solid transparent;
 }
 
+.toolbar-label {
+}

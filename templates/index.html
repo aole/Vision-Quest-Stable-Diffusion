@@ -9,11 +9,11 @@
 		<h1>Vision Quest</h1>
 		<textarea id="prompt" rows=8 placeholder="Enter prompt...">A dragon peeping out of an opened cardboard box</textarea>
 		<textarea id="negative" rows=8 placeholder="Enter negagive prompt..."></textarea>
-		<input type="button" id="generate" value="Generate"></input>
+		<input type="button" id="generate" value="Generate" onclick="generate()"></input>
 		<HR>
 		<div class="container-slider">
 			<label>Steps</label>
-			<input type=range></input>
+			<input type=range id="slider-steps"></input>
 			<label>20</label>
 		</div>
 	  </div>
@@ -23,5 +23,6 @@
 	  <div class="right"><select id="layers" size=8></select></div>
 	</div>
   <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
+  <script src="/static/js/server.js?v={{ cache_busting_param }}"></script>
 </body>
 </html>

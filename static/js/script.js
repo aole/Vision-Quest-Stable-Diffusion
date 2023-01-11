@@ -1,4 +1,9 @@
 
+var cacheBustingParam = Date.now();
+
+// Create a new image object and set its src property
+var rndrimg = new Image();
+rndrimg.src = '/static/images/image.png?v=' + cacheBustingParam;
 
 var spacebarDown = false;
 
@@ -36,13 +41,17 @@ var layerCtrl = document.getElementById("layers");
 // Set up image for rendering
 var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
 var renderCtx = renderCanvas.getContext('2d');
-renderCtx.fillText("Render", 10, 20);
+
+// Draw the image on the canvas when it finishes loading
+rndrimg.onload = function() {
+	renderCtx.drawImage(rndrimg, 0, 0);
+}
+
 addLayer(renderCanvas, "Render");
 
 // Set up image for drawing
 var drawCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
 var drawCtx = drawCanvas.getContext('2d');
-drawCtx.fillText("Draw", 10, 40);
 addLayer(drawCanvas, "Draw/Paint");
 
 // Set up image for masking

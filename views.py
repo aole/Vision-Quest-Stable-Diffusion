@@ -31,9 +31,10 @@ def img2img():
   prompt = request.form.get('prompt')
   negative = request.form.get('negative')
   num_steps = int(request.form.get('numSteps'))
+  noise = float(request.form.get('noise'))/100
   _, img_data = request.form.get('image').split(',')
   
   img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
-  sd_img2img(img, prompt, negative, num_steps);
+  sd_img2img(img, prompt, negative, num_steps, noise);
   
   return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})

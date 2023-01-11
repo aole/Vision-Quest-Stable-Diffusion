@@ -73,6 +73,11 @@ steps_slider.oninput = function() {
   document.getElementById('steps-label').innerText = steps_slider.value;
 }
 
+const noise_slider = document.getElementById('noise-slider');
+noise_slider.oninput = function() {
+  document.getElementById('noise-label').innerText = noise_slider.value;
+}
+
 const brush_slider = document.getElementById('brush-slider');
 brush_slider.oninput = function() {
 	document.getElementById('brush-label').innerText = brush_slider.value;
@@ -230,7 +235,7 @@ canvas.addEventListener("mousedown", function(e) {
 		drawing = true;
 		drawCtx.globalCompositeOperation = "source-over";
 		drawCtx.beginPath();
-		drawCtx.arc((prevX-panX), (prevY-panY), lineWidth / 2, 0, 2 * Math.PI);
+		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
 		drawCtx.fill();
 		draw();
 	}
@@ -265,7 +270,7 @@ canvas.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			drawCtx.beginPath();
-			drawCtx.arc((prevX-panX) + xIncrement * i, (prevY-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			drawCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
 			drawCtx.fill();
 		}
 	} else {

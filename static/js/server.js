@@ -18,6 +18,9 @@ function generate() {
     mode = 'img2img';
     var img = generateModelImage();
     formData.append('image', img);
+	
+    const noise = document.getElementById('noise-slider').value;
+    formData.append('noise', noise);
   }
 
     var xhr = new XMLHttpRequest();

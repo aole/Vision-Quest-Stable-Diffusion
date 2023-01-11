@@ -82,6 +82,19 @@ function updateRenderImage(url) {
 	}
 }
 
+// Set up image for rendering
+var modelCanvas = document.createElement('canvas');
+modelCanvas.width = renderBoxWidth;
+modelCanvas.height = renderBoxHeight;
+var modelCtx = modelCanvas.getContext('2d');
+function generateModelImage() {
+	modelCtx.drawImage(renderCanvas, 0, 0);
+	modelCtx.drawImage(drawCanvas, 0, 0);
+	
+	var dataURL = modelCanvas.toDataURL();
+	return dataURL;
+}
+
 function draw() {
     ctx.globalCompositeOperation = "source-over"
     

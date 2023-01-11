@@ -13,12 +13,21 @@ model_id = "runwayml/stable-diffusion-v1-5"
 device = "cuda"
 
 def sd_txt2img(prompt, negative='', steps=20):
+    print('txt2img', prompt)
     pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
     image = pipe(prompt=prompt, num_inference_steps=steps).images[0]
     
     image.save(imgfile)
+
+def sd_img2img(image, prompt, negative='', steps=20):
+    print('img2img', prompt)
+    pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
+    pipe = pipe.to(device)
+    image = pipe(prompt=prompt, image=image, num_inference_steps=steps).images[0]
     
+    image.save(imgfile)
+
 def generate_image(text="a photo of an astronaut riding a horse on mars", img=None, msk=None, steps=1, use_gpu=False):
     global pipe, device
     

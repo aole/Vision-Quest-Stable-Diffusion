@@ -21,6 +21,12 @@ function generate() {
     var img = generateModelImage();
     formData.append('image', img);
 	
+	var mask = generateMaskImage();
+	if (mask!=0) {
+		mode = 'inpainting';
+		formData.append('mask', mask);
+	}
+	
     const noise = document.getElementById('noise-slider').value;
     formData.append('noise', noise);
   }

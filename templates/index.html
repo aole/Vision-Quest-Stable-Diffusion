@@ -50,6 +50,7 @@
 		</div>
 		<div id="center-right">
 			<div class="toolbar horizontal">
+				<input type="color" id="brush-color" value="#000000">
 				<div class="toolbar-slider">
 					<div>
 					  <i class="fas fa-paint-brush"></i>
@@ -58,7 +59,13 @@
 					<label class="toolbar-label" id="brush-label">30</label>
 				</div>
 				<div class="horizontal-toolbar-separator"></div>
-				<input type="color" id="brush-color" value="#000000">
+				<div class="toolbar-slider">
+					<div>
+					  <i class="fas fa-mask"></i>
+					</div>
+					<input type=range id="mask-slider" min=1 max=150 value=30></input>
+					<label class="toolbar-label" id="mask-label">30</label>
+				</div>
 			</div>
 			<div id="canvas-container">
 				<canvas id="visCanvas"></canvas>

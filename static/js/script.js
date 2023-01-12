@@ -48,7 +48,9 @@ var drawCtx = drawCanvas.getContext('2d');
 addLayer(drawCanvas, "Draw/Paint");
 
 // Set up image for masking
-var maskCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
+var maskCanvas = document.createElement('canvas');
+maskCanvas.width = renderBoxWidth;
+maskCanvas.height = renderBoxHeight;
 var maskCtx = maskCanvas.getContext('2d');
 addLayer(maskCanvas, "Mask");
 layerCtrl.selectedIndex = 1;
@@ -61,9 +63,14 @@ var panY = canvas.height/2 - renderBoxHeight/2
 
 var panning = false;
 var drawing = false;
+var masking = false;
+var erasing = false;
 
 var lineWidth = 30;
 var lineColor = '#000';
+var maskColor = '#F88';
+
+maskCtx.fillStyle = maskColor;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -112,8 +119,11 @@ buttons.forEach(function(button) {
 });
 
 function clearImage() {
-	// Clear the temporary image
-	drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+	if (currentTool === 'mask')
+		maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+	else
+		drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+	
 	draw();
 }
 
@@ -136,8 +146,33 @@ modelCanvas.width = renderBoxWidth;
 modelCanvas.height = renderBoxHeight;
 var modelCtx = modelCanvas.getContext('2d');
 function generateModelImage() {
-	modelCtx.drawImage(renderCanvas, 0, 0);
-	modelCtx.drawImage(drawCanvas, 0, 0);
+    modelCtx.globalCompositeOperation = "source-over"
+	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
+	for (let lyr of layers) {
+		if (lyr.name === 'Mask')
+			continue;
+		modelCtx.drawImage(lyr.image, 0, 0);
+	}
+	//modelCtx.drawImage(renderCanvas, 0, 0);
+	//modelCtx.drawImage(drawCanvas, 0, 0);
+	
+	var dataURL = modelCanvas.toDataURL();
+	return dataURL;
+}
+
+function generateMaskImage() {
+	const pixelBuffer = new Uint32Array(maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data.buffer);
+	if (!pixelBuffer.some(color => color !== 0))
+		return 0;
+	
+    modelCtx.globalCompositeOperation = "source-over"
+	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
+	modelCtx.drawImage(maskCanvas, 0, 0);
+    modelCtx.globalCompositeOperation = "source-in"
+	modelCtx.beginPath();
+	modelCtx.fillStyle = '#FFF';
+	modelCtx.rect(0, 0, modelCanvas.width, modelCanvas.height);
+	modelCtx.fill();
 	
 	var dataURL = modelCanvas.toDataURL();
 	return dataURL;
@@ -179,7 +214,10 @@ function draw() {
 	
 	// Draw layers onto canvas
 	for (let lyr of layers) {
+		if (lyr.name === 'Mask')
+			ctx.globalAlpha = 0.5;
 		ctx.drawImage(lyr.image, panX, panY);
+		ctx.globalAlpha = 1;
 	}
 	
 	// render box
@@ -236,7 +274,7 @@ function draw() {
 
 // Set up mousedown event listener
 canvas.addEventListener("mousedown", function(e) {
-	panning = drawing = false;
+	panning = drawing = erasing = masking = false;
 
     prevX = e.offsetX;
     prevY = e.offsetY;
@@ -251,6 +289,20 @@ canvas.addEventListener("mousedown", function(e) {
 		drawCtx.beginPath();
 		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
 		drawCtx.fill();
+		draw();
+	} else if (e.button === 0 && currentTool === 'eraser') {
+		erasing = true;
+		drawCtx.globalCompositeOperation = "destination-out";
+		drawCtx.beginPath();
+		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		drawCtx.fill();
+		draw();
+	} else if (e.button === 0 && currentTool === 'mask') {
+		masking = true;
+		maskCtx.globalCompositeOperation = "source-over";
+		maskCtx.beginPath();
+		maskCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		maskCtx.fill();
 		draw();
 	}
 });
@@ -280,12 +332,52 @@ canvas.addEventListener("mousemove", function(e) {
 		var xIncrement = dx / steps;
 		var yIncrement = dy / steps;
 		
-		drawCtx.globalCompositeOperation = "source-over";
+		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			drawCtx.beginPath();
 			drawCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
 			drawCtx.fill();
+		}
+	} else if (erasing) {
+		// Calculate the distance between the current and previous cursor positions
+		var dx = x - prevX;
+		var dy = y - prevY;
+		var distance = Math.sqrt(dx * dx + dy * dy);
+
+		// Calculate the number of intermediate points to draw
+		var steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+		// Calculate the x and y increments for each intermediate point
+		var xIncrement = dx / steps;
+		var yIncrement = dy / steps;
+		
+		// drawCtx.globalCompositeOperation = "source-over";
+		// Draw a line between the current and previous cursor positions
+		for (var i = 0; i < steps; i++) {
+			drawCtx.beginPath();
+			drawCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			drawCtx.fill();
+		}
+	} else if (masking) {
+		// Calculate the distance between the current and previous cursor positions
+		var dx = x - prevX;
+		var dy = y - prevY;
+		var distance = Math.sqrt(dx * dx + dy * dy);
+
+		// Calculate the number of intermediate points to draw
+		var steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+		// Calculate the x and y increments for each intermediate point
+		var xIncrement = dx / steps;
+		var yIncrement = dy / steps;
+		
+		// drawCtx.globalCompositeOperation = "source-over";
+		// Draw a line between the current and previous cursor positions
+		for (var i = 0; i < steps; i++) {
+			maskCtx.beginPath();
+			maskCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			maskCtx.fill();
 		}
 	} else {
         var lyridx = layers.length-layerCtrl.selectedIndex-1;
@@ -324,7 +416,7 @@ canvas.addEventListener("mouseup", function(e) {
     // Check if left mouse button was released
     if (e.button === 0) {
         // Reset panning flag
-        panning = drawing = false;
+        panning = drawing = erasing = masking = false;
     }
 });
 

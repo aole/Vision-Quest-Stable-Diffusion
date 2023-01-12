@@ -1,7 +1,7 @@
 # Vision Quest
 Web based local AI painting program
 
-![screenshot](/docs/images/screenshot01.jpg "Logo Title Text 1")
+![screenshot](/docs/images/screenshot.jpg "Vision Quest Screenshot")
 
 Uses Stable Diffusion models to generate images from prompts.
 
@@ -13,3 +13,5 @@ Features:
 - pan
 - paint with adjustable size brush
 - mask
+- erase
+- clear

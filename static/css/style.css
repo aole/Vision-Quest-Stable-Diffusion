@@ -68,7 +68,7 @@ html, body {
   flex-direction: row;
 }
 
-#prompt, #negative, #generate, #layers {
+#prompt, #negative, #generate, #layers-list {
 	width: 100%;
 }
 
@@ -83,7 +83,7 @@ html, body {
 	background-color: #504444;
 }
 
-#layers {
+#layers-list {
 	background-color: transparent;
 	color: white;
 }

@@ -69,13 +69,14 @@
 					<input type=range id="mask-slider" title="Mask" min=1 max=150 value=30></input>
 					<label class="toolbar-label" id="mask-label">30</label>
 				</div>
+				<input type="color" id="mask-color" title="Mask Color" value="#FF8888">
 			</div>
 			<div id="canvas-container">
 				<canvas id="visCanvas"></canvas>
 			</div>
 		</div>
 	  </div>
-	  <div class="right"><select id="layers" title="Layers" size=8></select></div>
+	  <div class="right"><select id="layers-list" title="Layers" size=8></select></div>
 	</div>
   <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
   <script src="/static/js/server.js?v={{ cache_busting_param }}"></script>

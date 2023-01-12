@@ -19,57 +19,59 @@ let pickMouse = 0;
 let boundsLineWidth = 1;
 let boundsLineWidthHighligh = 3;
 
+var brushColor = '#000';
+var maskColor = '#F88';
+
 // Get parent element
 var parent = document.getElementById("canvas-container");
 
 // Get canvas element
-var canvas = document.getElementById("visCanvas");
+var viewport = document.getElementById("visCanvas");
 
 // Set canvas dimensions to match parent element
-canvas.width = parent.offsetWidth-25; // padding
-canvas.height = parent.offsetHeight-25; // padding
+viewport.width = parent.offsetWidth-25; // padding
+viewport.height = parent.offsetHeight-25; // padding
 
 // Get canvas context
-var ctx = canvas.getContext("2d");
+var viewportCtx = viewport.getContext("2d");
 
-// image layers
+/**
+    Layers
+**/
 var layers = [];
-var layerCtrl = document.getElementById("layers");
+var layerCtrl = document.getElementById("layers-list");
 
 // Set up image for rendering
 var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
-var renderCtx = renderCanvas.getContext('2d');
-
-addLayer(renderCanvas, "Render");
+addLayer(renderCanvas, "render");
 
 // Set up image for drawing
 var drawCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
-var drawCtx = drawCanvas.getContext('2d');
-addLayer(drawCanvas, "Draw/Paint");
+drawCanvas.getContext('2d').fillStyle = brushColor;
+addLayer(drawCanvas, "brush");
 
 // Set up image for masking
 var maskCanvas = document.createElement('canvas');
 maskCanvas.width = renderBoxWidth;
 maskCanvas.height = renderBoxHeight;
-var maskCtx = maskCanvas.getContext('2d');
-addLayer(maskCanvas, "Mask");
-layerCtrl.selectedIndex = 1;
+maskCanvas.getContext('2d').fillStyle = maskColor;
+addLayer(maskCanvas, "mask");
+
+var currentCanvas = null;
+var currentCtx = null;
+
+selectLayer("brush");
 
 var prevX = 0;
 var prevY = 0;
 // Set up panning
-var panX = canvas.width/2 - renderBoxWidth/2;
-var panY = canvas.height/2 - renderBoxHeight/2
+var panX = viewport.width/2 - renderBoxWidth/2;
+var panY = viewport.height/2 - renderBoxHeight/2
 
 var panning = false;
 var drawing = false;
 var masking = false;
 var erasing = false;
-
-var lineColor = '#000';
-var maskColor = '#F88';
-
-maskCtx.fillStyle = maskColor;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -104,22 +106,30 @@ mask_slider.oninput = function() {
 
 // Set up the change event handler for the color picker
 const color_picker = document.getElementById('brush-color');
-color_picker.onchange = function() {
+color_picker.onchange = function(e) {
+    setCurrentTool('brush');
 	// Get the chosen color
-	lineColor = color_picker.value;
-	drawCtx.fillStyle = lineColor;
+	lineColor = e.target.value;
+	currentCtx.fillStyle = lineColor;
 }
 
-var buttons = document.querySelectorAll(".draw-group");
+// Set up the change event handler for the mask color picker
+const mask_picker = document.getElementById('mask-color');
+mask_picker.onchange = function(e) {
+    setCurrentTool('mask');
+	// Get the chosen color
+	maskColor = e.target.value;
+	currentCtx.fillStyle = maskColor;
+}
 
+/**
+    Toolbar button click
+**/
+var buttons = document.querySelectorAll(".draw-group");
 var currentTool = "brush";
 buttons.forEach(function(button) {
     button.addEventListener("click", function() {
-        buttons.forEach(function(b){
-            b.classList.remove("selected");
-        });
-        button.classList.add("selected");
-        currentTool = button.getAttribute('data-tool');
+        setCurrentTool(button.getAttribute('data-tool'));
     });
 });
 
@@ -129,14 +139,29 @@ function setCurrentTool(tool) {
         b.classList.remove("selected");
     });
     document.getElementById(tool+"-button").classList.add("selected");
+    
+    // select appropriate layer
+    if (tool==='brush' || tool==='mask')
+        selectLayer(tool);
+}
+
+function findLayerByName(name) {
+    return layers.find((e) => e.name===name);
+}
+
+function findLayerIndexByName(name) {
+    return layers.findIndex((e) => e.name===name);
+}
+
+function selectLayer(name) {
+    var idx = findLayerIndexByName(name);
+    layerCtrl.selectedIndex = layers.length-1-idx;
+    currentCanvas = layers[idx].canvas;
+    currentCtx = layers[idx].ctx;
 }
 
 function clearImage() {
-	if (currentTool === 'mask')
-		maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-	else
-		drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-	
+	currentCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 	draw();
 }
 
@@ -190,101 +215,102 @@ function generateMaskImage() {
 }
 
 function draw() {
-    ctx.globalCompositeOperation = "source-over"
+    viewportCtx.globalCompositeOperation = "source-over"
     
 	// Set background color
-	ctx.fillStyle = "#666666";
+	viewportCtx.fillStyle = "#666666";
 
 	// Draw background
-	ctx.fillRect(0, 0, canvas.width/scale, canvas.height/scale);
+	viewportCtx.fillRect(0, 0, viewport.width/scale, viewport.height/scale);
 
 	
 	// Draw grid
-	ctx.lineWidth = 1/scale;
+	viewportCtx.lineWidth = 1/scale;
 
 	// Set line color
-	ctx.strokeStyle = "#55555588";
+	viewportCtx.strokeStyle = "#55555588";
 	// Reset line dash pattern
-	ctx.setLineDash([]);
+	viewportCtx.setLineDash([]);
 
 	// Draw vertical lines
-	for (var x = panX%128; x < canvas.width/scale; x += 128) {
-	  ctx.beginPath();
-	  ctx.moveTo(x, 0);
-	  ctx.lineTo(x, canvas.height/scale);
-	  ctx.stroke();
+	for (var x = panX%128; x < viewport.width/scale; x += 128) {
+	  viewportCtx.beginPath();
+	  viewportCtx.moveTo(x, 0);
+	  viewportCtx.lineTo(x, viewport.height/scale);
+	  viewportCtx.stroke();
 	}
 
 	// Draw horizontal lines
-	for (var y = panY%128; y < canvas.height/scale; y += 128) {
-	  ctx.beginPath();
-	  ctx.moveTo(0, y);
-	  ctx.lineTo(canvas.width/scale, y);
-	  ctx.stroke();
+	for (var y = panY%128; y < viewport.height/scale; y += 128) {
+	  viewportCtx.beginPath();
+	  viewportCtx.moveTo(0, y);
+	  viewportCtx.lineTo(viewport.width/scale, y);
+	  viewportCtx.stroke();
 	}
 	
 	// Draw layers onto canvas
 	for (let lyr of layers) {
-		if (lyr.name === 'Mask')
-			ctx.globalAlpha = 0.5;
-		ctx.drawImage(lyr.image, panX, panY);
-		ctx.globalAlpha = 1;
+		if (lyr.name === 'mask')
+			viewportCtx.globalAlpha = 0.5;
+		viewportCtx.drawImage(lyr.canvas, panX, panY);
+		viewportCtx.globalAlpha = 1;
 	}
 	
 	// render box
 	// Set line color
-	ctx.strokeStyle = "#EEE";
+	viewportCtx.strokeStyle = "#EEE";
 	// Set line dash pattern
-	ctx.setLineDash([5, 5]);
-    ctx.lineDashOffset = 0;
+	viewportCtx.setLineDash([5./scale, 5./scale]);
+    viewportCtx.lineDashOffset = 0;
 
-    for (var i=0; i<2; i++) {
-        var lyridx = layers.length-layerCtrl.selectedIndex-1;
-        var lyr = layers[lyridx];
-        var w = lyr.image.width;
-        var h = lyr.image.height;
-        
-        if (lyr.name != 'Render' && lyr.name != 'Draw/Paint' && lyr.name != 'Mask' && pickMouse!=0) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
-        ctx.beginPath();
-        ctx.moveTo(panX, panY);
-        ctx.lineTo(panX+w, panY);
-        ctx.lineTo(panX+w, panY+h);
-        ctx.lineTo(panX, panY+h);
-        ctx.closePath();
-        ctx.stroke();
+    var lyridx = layers.length-layerCtrl.selectedIndex-1;
+    var lyr = layers[lyridx];
+    var w = lyr.canvas.width;
+    var h = lyr.canvas.height;
+    
+    if (lyr.name != 'render' && lyr.name != 'brush' && lyr.name != 'mask' && pickMouse!=0)
+        viewportCtx.lineWidth = boundsLineWidthHighligh/scale;
+    else viewportCtx.lineWidth = boundsLineWidth/scale;
+    
+    for (var i=0; i<2; i++) { // alternating black and white dashes
+        viewportCtx.beginPath();
+        viewportCtx.moveTo(panX, panY);
+        viewportCtx.lineTo(panX+w, panY);
+        viewportCtx.lineTo(panX+w, panY+h);
+        viewportCtx.lineTo(panX, panY+h);
+        viewportCtx.closePath();
+        viewportCtx.stroke();
         
         // handles
-        if (lyr.name != 'Mask' && lyr.name != 'Draw/Paint') {
-            if (handleMouse==1) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
-            ctx.beginPath()
-            ctx.arc(panX+w/2, panY, handleRadius/scale, 0, 2 * Math.PI);
-            ctx.stroke();
+        if (lyr.name != 'mask' && lyr.name != 'brush') {
+            if (handleMouse==1) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+            viewportCtx.beginPath()
+            viewportCtx.arc(panX+w/2, panY, handleRadius/scale, 0, 2 * Math.PI);
+            viewportCtx.stroke();
             
-            if (handleMouse==2) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
-            ctx.beginPath()
-            ctx.arc(panX+w, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
-            ctx.stroke();
+            if (handleMouse==2) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+            viewportCtx.beginPath()
+            viewportCtx.arc(panX+w, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
+            viewportCtx.stroke();
             
-            if (handleMouse==3) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
-            ctx.beginPath()
-            ctx.arc(panX+w/2, panY+h, handleRadius/scale, 0, 2 * Math.PI);
-            ctx.stroke();
+            if (handleMouse==3) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+            viewportCtx.beginPath()
+            viewportCtx.arc(panX+w/2, panY+h, handleRadius/scale, 0, 2 * Math.PI);
+            viewportCtx.stroke();
             
-            if (handleMouse==4) ctx.lineWidth = boundsLineWidthHighligh/scale; else ctx.lineWidth = boundsLineWidth/scale;
-            ctx.beginPath()
-            ctx.arc(panX, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
-            ctx.stroke();
+            if (handleMouse==4) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+            viewportCtx.beginPath()
+            viewportCtx.arc(panX, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
+            viewportCtx.stroke();
         }
         // Set line color
-        ctx.strokeStyle = "#111";
-        // Set line dash pattern
-        ctx.setLineDash([5, 5]);
-        ctx.lineDashOffset = 5;
+        viewportCtx.strokeStyle = "#111";
+        viewportCtx.lineDashOffset = 5/scale;
     }
 };
 
 // Set up mousedown event listener
-canvas.addEventListener("mousedown", function(e) {
+viewport.addEventListener("mousedown", function(e) {
 	panning = drawing = erasing = masking = false;
 
     prevX = e.offsetX;
@@ -297,32 +323,32 @@ canvas.addEventListener("mousedown", function(e) {
     } else if (e.button === 0 && currentTool === 'brush') {
 		drawing = true;
         var lineWidth = document.getElementById('brush-slider').value;
-		drawCtx.globalCompositeOperation = "source-over";
-		drawCtx.beginPath();
-		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
-		drawCtx.fill();
+		currentCtx.globalCompositeOperation = "source-over";
+		currentCtx.beginPath();
+		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		currentCtx.fill();
 		draw();
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
         var lineWidth = document.getElementById('brush-slider').value;
-		drawCtx.globalCompositeOperation = "destination-out";
-		drawCtx.beginPath();
-		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
-		drawCtx.fill();
+		currentCtx.globalCompositeOperation = "destination-out";
+		currentCtx.beginPath();
+		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		currentCtx.fill();
 		draw();
 	} else if (e.button === 0 && currentTool === 'mask') {
 		masking = true;
         var lineWidth = document.getElementById('mask-slider').value;
-		maskCtx.globalCompositeOperation = "source-over";
-		maskCtx.beginPath();
-		maskCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
-		maskCtx.fill();
+		currentCtx.globalCompositeOperation = "source-over";
+		currentCtx.beginPath();
+		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		currentCtx.fill();
 		draw();
 	}
 });
 
 // Set up mousemove event listener
-canvas.addEventListener("mousemove", function(e) {
+viewport.addEventListener("mousemove", function(e) {
     var x = e.offsetX;
     var y = e.offsetY;
     
@@ -350,9 +376,9 @@ canvas.addEventListener("mousemove", function(e) {
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			drawCtx.beginPath();
-			drawCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
-			drawCtx.fill();
+			currentCtx.beginPath();
+			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			currentCtx.fill();
 		}
 	} else if (erasing) {
 		// Calculate the distance between the current and previous cursor positions
@@ -370,9 +396,9 @@ canvas.addEventListener("mousemove", function(e) {
         var lineWidth = document.getElementById('brush-slider').value;
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			drawCtx.beginPath();
-			drawCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
-			drawCtx.fill();
+			currentCtx.beginPath();
+			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			currentCtx.fill();
 		}
 	} else if (masking) {
 		// Calculate the distance between the current and previous cursor positions
@@ -391,16 +417,16 @@ canvas.addEventListener("mousemove", function(e) {
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			maskCtx.beginPath();
-			maskCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
-			maskCtx.fill();
+			currentCtx.beginPath();
+			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			currentCtx.fill();
 		}
 	} else {
         var lyridx = layers.length-layerCtrl.selectedIndex-1;
         var lyr = layers[lyridx];
         // if (lyr.name === 'Render') {
-            var w = lyr.image.width;
-            var h = lyr.image.height;
+            var w = lyr.canvas.width;
+            var h = lyr.canvas.height;
             
             var mx = x/scale-panX;
             var my = y/scale-panY;
@@ -428,7 +454,7 @@ canvas.addEventListener("mousemove", function(e) {
 });
 
 // Set up mouseup event listener
-canvas.addEventListener("mouseup", function(e) {
+viewport.addEventListener("mouseup", function(e) {
     // Check if left mouse button was released
     if (e.button === 0) {
         // Reset panning flag
@@ -436,18 +462,17 @@ canvas.addEventListener("mouseup", function(e) {
     }
 });
 
-layerCtrl.addEventListener("change", function() {
+layerCtrl.addEventListener("change", function(e) {
+    selectLayer(e.target.value);
     draw();
 });
 
-function addLayer(img, name='', position=-1) {
-	if (name=='')
-		name = 'Layer'+(layers.length+1);
-    
+function addLayer(canvas, name, position=-1) {
+    var ctx = canvas.getContext('2d');
     if (position===-1)
-        layers.push({name: name, image: img});
+        layers.push({name: name, canvas: canvas, ctx: ctx});
     else
-        layers.splice(position, 0, {name: name, image: img});
+        layers.splice(position, 0, {name: name, canvas: canvas, ctx: ctx});
 	
 	layerCtrl.options.length = 0;
 	for (let i=layers.length-1; i>=0; i--) {
@@ -458,7 +483,7 @@ function addLayer(img, name='', position=-1) {
 }
 
 // Add event listener for dropped files
-canvas.ondrop = function(e) {
+viewport.ondrop = function(e) {
   e.preventDefault();
 
   // Get dropped file
@@ -475,8 +500,12 @@ canvas.ondrop = function(e) {
 	var img = document.createElement("img")
 	// Set onload event listener for image element
 	img.onload = function() {
-		addLayer(img, 'Image', layers.length-2);
-        layerCtrl.selectedIndex = 2;
+        var cvs = new OffscreenCanvas(img.width, img.height);
+        var ctx = cvs.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        var name = 'image'+layers.length;
+		addLayer(cvs, name, layers.length-2);
+        selectLayer(name);
         setCurrentTool("move");
 		draw();
 	}
@@ -489,7 +518,7 @@ canvas.ondrop = function(e) {
 }
 
 // Add event listener for dragged files
-canvas.ondragover = function(e) {
+viewport.ondragover = function(e) {
   e.preventDefault();
 }
 
@@ -500,18 +529,18 @@ window.onload = function(e) {
 document.addEventListener('keydown', function(e) {
 	if (e.key === ' ') {
 		spacebarDown = true;
-		canvas.style.cursor = "grab";
+		viewport.style.cursor = "grab";
 	}
 });
 
 document.addEventListener('keyup', function(e) {
 	if (e.key === ' ') {
 		spacebarDown = false;
-		canvas.style.cursor = "default";
+		viewport.style.cursor = "default";
 	}
 });
 
-canvas.addEventListener('wheel', function(e) {
+viewport.addEventListener('wheel', function(e) {
   // Calculate the new scale factor based on the mouse wheel delta
   const delta = e.deltaY > 0 ? 0.9 : 1.1;
   scale *= delta;
@@ -520,7 +549,7 @@ canvas.addEventListener('wheel', function(e) {
   scale = Math.max(0.1, Math.min(scale, 10));
 
   // Set the transformation matrix for the canvas context
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  viewportCtx.setTransform(scale, 0, 0, scale, 0, 0);
   
   draw();
 });

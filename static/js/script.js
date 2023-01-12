@@ -27,7 +27,7 @@ var canvas = document.getElementById("visCanvas");
 
 // Set canvas dimensions to match parent element
 canvas.width = parent.offsetWidth-25; // padding
-canvas.height = parent.offsetHeight-65; // padding
+canvas.height = parent.offsetHeight-25; // padding
 
 // Get canvas context
 var ctx = canvas.getContext("2d");
@@ -63,6 +63,7 @@ var panning = false;
 var drawing = false;
 
 var lineWidth = 30;
+var lineColor = '#000';
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -87,6 +88,14 @@ const brush_slider = document.getElementById('brush-slider');
 brush_slider.oninput = function() {
 	document.getElementById('brush-label').innerText = brush_slider.value;
 	lineWidth = brush_slider.value;
+}
+
+// Set up the change event handler for the color picker
+const color_picker = document.getElementById('brush-color');
+color_picker.onchange = function() {
+	// Get the chosen color
+	lineColor = color_picker.value;
+	drawCtx.fillStyle = lineColor;
 }
 
 var buttons = document.querySelectorAll(".draw-group");

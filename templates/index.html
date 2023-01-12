@@ -43,7 +43,7 @@
 			<div class="toolbar-button draw-group" id="eraser-button" data-tool="eraser">
 			  <i class="fas fa-eraser"></i>
 			</div>
-			<div class="toolbar-separator"></div>
+			<div class="vertical-toolbar-separator"></div>
 			<div class="toolbar-button" id="clear-button" data-tool="clear" onclick="clearImage()">
 			  <i class="fas fa-trash"></i>
 			</div>
@@ -57,6 +57,8 @@
 					<input type=range id="brush-slider" min=1 max=150 value=30></input>
 					<label class="toolbar-label" id="brush-label">30</label>
 				</div>
+				<div class="horizontal-toolbar-separator"></div>
+				<input type="color" id="brush-color" value="#000000">
 			</div>
 			<div id="canvas-container">
 				<canvas id="visCanvas"></canvas>

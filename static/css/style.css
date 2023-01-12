@@ -18,8 +18,18 @@ html, body {
 }
 
 .toolbar-slider {
+  padding: 0px 5px;
   display: flex;
-  align-items: center
+  align-items: center;
+  background-color: #444;
+  color: white;
+  text-align: center;
+}
+
+.toolbar > input[type="color"] {
+	height: 100%;
+	background-color: #444;
+	border: none;
 }
 
 .container-slider > label {
@@ -135,9 +145,10 @@ canvas {
   background-color: #6f9d6f; /* Lighter background color for selected button */
 }
 
-.toolbar-separator {
+.vertical-toolbar-separator {
     border-bottom: 2px solid transparent;
 }
 
-.toolbar-label {
+.horizontal-toolbar-separator {
+    border-right: 5px solid transparent;
 }

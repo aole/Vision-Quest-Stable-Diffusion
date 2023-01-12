@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
   <link rel="stylesheet" type="text/css" href="/static/css/style.css?v={{ cache_busting_param }}">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css" integrity="sha384-vp86vTRFVJgpjF9jiIGPEEqYqlDwgyBgEF109VFjmqGmIY/Y4HV4d3Gp2irVfcrp" crossorigin="anonymous">
   <title>Vision Quest</title>
@@ -25,16 +28,16 @@
 		</div>
 		<div class="container-slider">
 			<label for="noise-slider">Noise</label>
-			<input type=range id="noise-slider" min=0 max=100 value=80></input>
+			<input type=range id="noise-slider" title="Noise Strength" min=0 max=100 value=80></input>
 			<label id="noise-label">80</label>
 		</div>
 	  </div>
 	  <div class="center" id="center-panel">
 		<div class="toolbar vertical">
-			<div class="toolbar-button draw-group selected" id="move-button" data-tool="move">
+			<div class="toolbar-button draw-group" id="move-button" data-tool="move">
 			  <i class="fas fa-arrows-alt"></i>
 			</div>
-			<div class="toolbar-button draw-group" id="brush-button" data-tool="brush">
+			<div class="toolbar-button draw-group selected" id="brush-button" data-tool="brush">
 			  <i class="fas fa-paint-brush"></i>
 			</div>
 			<div class="toolbar-button draw-group" id="mask-button" data-tool="mask">
@@ -50,12 +53,12 @@
 		</div>
 		<div id="center-right">
 			<div class="toolbar horizontal">
-				<input type="color" id="brush-color" value="#000000">
+				<input type="color" id="brush-color" title="Brush Color" value="#000000">
 				<div class="toolbar-slider">
 					<div>
 					  <i class="fas fa-paint-brush"></i>
 					</div>
-					<input type=range id="brush-slider" min=1 max=150 value=30></input>
+					<input type=range id="brush-slider" title="Brush Size" min=1 max=150 value=30></input>
 					<label class="toolbar-label" id="brush-label">30</label>
 				</div>
 				<div class="horizontal-toolbar-separator"></div>
@@ -63,7 +66,7 @@
 					<div>
 					  <i class="fas fa-mask"></i>
 					</div>
-					<input type=range id="mask-slider" min=1 max=150 value=30></input>
+					<input type=range id="mask-slider" title="Mask" min=1 max=150 value=30></input>
 					<label class="toolbar-label" id="mask-label">30</label>
 				</div>
 			</div>
@@ -72,7 +75,7 @@
 			</div>
 		</div>
 	  </div>
-	  <div class="right"><select id="layers" size=8></select></div>
+	  <div class="right"><select id="layers" title="Layers" size=8></select></div>
 	</div>
   <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
   <script src="/static/js/server.js?v={{ cache_busting_param }}"></script>

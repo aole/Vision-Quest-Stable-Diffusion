@@ -66,7 +66,6 @@ var drawing = false;
 var masking = false;
 var erasing = false;
 
-var lineWidth = 30;
 var lineColor = '#000';
 var maskColor = '#F88';
 
@@ -97,6 +96,12 @@ brush_slider.oninput = function() {
 	lineWidth = brush_slider.value;
 }
 
+const mask_slider = document.getElementById('mask-slider');
+mask_slider.oninput = function() {
+	document.getElementById('mask-label').innerText = mask_slider.value;
+	lineWidth = mask_slider.value;
+}
+
 // Set up the change event handler for the color picker
 const color_picker = document.getElementById('brush-color');
 color_picker.onchange = function() {
@@ -107,7 +112,7 @@ color_picker.onchange = function() {
 
 var buttons = document.querySelectorAll(".draw-group");
 
-var currentTool = "move";
+var currentTool = "brush";
 buttons.forEach(function(button) {
     button.addEventListener("click", function() {
         buttons.forEach(function(b){
@@ -117,6 +122,14 @@ buttons.forEach(function(button) {
         currentTool = button.getAttribute('data-tool');
     });
 });
+
+function setCurrentTool(tool) {
+    currentTool = tool;
+    buttons.forEach(function(b){
+        b.classList.remove("selected");
+    });
+    document.getElementById(tool+"-button").classList.add("selected");
+}
 
 function clearImage() {
 	if (currentTool === 'mask')
@@ -153,8 +166,6 @@ function generateModelImage() {
 			continue;
 		modelCtx.drawImage(lyr.image, 0, 0);
 	}
-	//modelCtx.drawImage(renderCanvas, 0, 0);
-	//modelCtx.drawImage(drawCanvas, 0, 0);
 	
 	var dataURL = modelCanvas.toDataURL();
 	return dataURL;
@@ -285,6 +296,7 @@ canvas.addEventListener("mousedown", function(e) {
         panning = true;
     } else if (e.button === 0 && currentTool === 'brush') {
 		drawing = true;
+        var lineWidth = document.getElementById('brush-slider').value;
 		drawCtx.globalCompositeOperation = "source-over";
 		drawCtx.beginPath();
 		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
@@ -292,6 +304,7 @@ canvas.addEventListener("mousedown", function(e) {
 		draw();
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
+        var lineWidth = document.getElementById('brush-slider').value;
 		drawCtx.globalCompositeOperation = "destination-out";
 		drawCtx.beginPath();
 		drawCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
@@ -299,6 +312,7 @@ canvas.addEventListener("mousedown", function(e) {
 		draw();
 	} else if (e.button === 0 && currentTool === 'mask') {
 		masking = true;
+        var lineWidth = document.getElementById('mask-slider').value;
 		maskCtx.globalCompositeOperation = "source-over";
 		maskCtx.beginPath();
 		maskCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
@@ -332,6 +346,7 @@ canvas.addEventListener("mousemove", function(e) {
 		var xIncrement = dx / steps;
 		var yIncrement = dy / steps;
 		
+        var lineWidth = document.getElementById('brush-slider').value;
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
@@ -352,7 +367,7 @@ canvas.addEventListener("mousemove", function(e) {
 		var xIncrement = dx / steps;
 		var yIncrement = dy / steps;
 		
-		// drawCtx.globalCompositeOperation = "source-over";
+        var lineWidth = document.getElementById('brush-slider').value;
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			drawCtx.beginPath();
@@ -372,6 +387,7 @@ canvas.addEventListener("mousemove", function(e) {
 		var xIncrement = dx / steps;
 		var yIncrement = dy / steps;
 		
+        var lineWidth = document.getElementById('mask-slider').value;
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
@@ -424,10 +440,14 @@ layerCtrl.addEventListener("change", function() {
     draw();
 });
 
-function addLayer(img, name='') {
+function addLayer(img, name='', position=-1) {
 	if (name=='')
 		name = 'Layer'+(layers.length+1);
-	layers.push({name: name, image: img});
+    
+    if (position===-1)
+        layers.push({name: name, image: img});
+    else
+        layers.splice(position, 0, {name: name, image: img});
 	
 	layerCtrl.options.length = 0;
 	for (let i=layers.length-1; i>=0; i--) {
@@ -455,7 +475,9 @@ canvas.ondrop = function(e) {
 	var img = document.createElement("img")
 	// Set onload event listener for image element
 	img.onload = function() {
-		addLayer(img);
+		addLayer(img, 'Image', layers.length-2);
+        layerCtrl.selectedIndex = 2;
+        setCurrentTool("move");
 		draw();
 	}
     // Set src of image to data URL

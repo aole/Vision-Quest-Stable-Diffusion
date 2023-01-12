@@ -6,12 +6,14 @@ function generate() {
   const prompt_ = document.getElementById('prompt').value;
   const negative = document.getElementById('negative').value;
   const numSteps = document.getElementById('steps-slider').value;
+  const guidance = document.getElementById('guidance-slider').value;
 
   var formData = new FormData();
   
   formData.append('prompt', prompt_);
   formData.append('negative', negative);
   formData.append('numSteps', numSteps);
+  formData.append('guidance', guidance);
   
   var mode = 'txt2img';
   if (!newDocument) {

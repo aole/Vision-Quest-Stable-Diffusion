@@ -12,19 +12,19 @@ model_id = "runwayml/stable-diffusion-v1-5"
 
 device = "cuda"
 
-def sd_txt2img(prompt, negative='', steps=20):
+def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
     print('txt2img', prompt)
     pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, num_inference_steps=steps, negative_prompt=negative).images[0]
+    image = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images[0]
     
     image.save(imgfile)
 
-def sd_img2img(image, prompt, negative='', steps=20, noise=.8):
+def sd_img2img(image, prompt, negative='', steps=20, guidance=7.5, noise=.8):
     print('img2img', prompt)
     pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, strength=noise, image=image, num_inference_steps=steps, negative_prompt=negative).images[0]
+    image = pipe(prompt=prompt, strength=noise, image=image, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images[0]
     
     image.save(imgfile)
 

@@ -73,6 +73,11 @@ steps_slider.oninput = function() {
   document.getElementById('steps-label').innerText = steps_slider.value;
 }
 
+const guidance_slider = document.getElementById('guidance-slider');
+guidance_slider.oninput = function() {
+  document.getElementById('guidance-label').innerText = guidance_slider.value;
+}
+
 const noise_slider = document.getElementById('noise-slider');
 noise_slider.oninput = function() {
   document.getElementById('noise-label').innerText = noise_slider.value;

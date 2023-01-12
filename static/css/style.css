@@ -14,8 +14,20 @@ html, body {
 .container-slider {
   display: flex;
   width: 100%; /* Make container take up whole visible space */
+  align-items: center
+}
+
+.toolbar-slider {
   display: flex;
   align-items: center
+}
+
+.container-slider > label {
+	width: 20%;
+}
+
+.container-slider > input {
+	width: 60%;
 }
 
 .left, .center, .right {

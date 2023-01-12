@@ -19,6 +19,11 @@
 			<label id="steps-label">20</label>
 		</div>
 		<div class="container-slider">
+			<label for="guidance-slider">Prompt</label>
+			<input type=range id="guidance-slider" min=0.1 max=20 value=7.5 step=0.1></input>
+			<label id="guidance-label">7.5</label>
+		</div>
+		<div class="container-slider">
 			<label for="noise-slider">Noise</label>
 			<input type=range id="noise-slider" min=0 max=100 value=80></input>
 			<label id="noise-label">80</label>
@@ -45,7 +50,7 @@
 		</div>
 		<div id="center-right">
 			<div class="toolbar horizontal">
-				<div class="container-slider">
+				<div class="toolbar-slider">
 					<div>
 					  <i class="fas fa-paint-brush"></i>
 					</div>

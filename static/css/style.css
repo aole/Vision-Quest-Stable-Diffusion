@@ -1,68 +1,154 @@
-#container {
+html, body {
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
+  width: 100%; /* Make page take up whole visible space */
+  height: 100%; /* Make page take up whole visible space */
+}
+
+.container {
   display: flex;
-  justify-content: center;
+  color: white; /* Text color */
+  height: 100%; /* Make container take up whole visible space */
 }
 
-.slider-container {
+.container-slider {
   display: flex;
+  width: 100%; /* Make container take up whole visible space */
+  align-items: center
 }
 
-.slider-container label {
-  flex: 20%;
+.toolbar-slider {
+  padding: 0px 5px;
+  display: flex;
+  align-items: center;
+  background-color: #444;
+  color: white;
+  text-align: center;
 }
 
-.slider-container span {
-  flex: 20%;
-  text-align: center;  /* Center the text within the element */
+.toolbar > input[type="color"] {
+	height: 100%;
+	background-color: #444;
+	border: none;
 }
 
-.slider-container input {
-  flex: 60%;
+.container-slider > label {
+	width: 20%;
 }
 
-#tools-panel {
+.container-slider > input {
+	width: 60%;
+}
+
+.left, .center, .right {
+  box-sizing: border-box; /* Include padding in panel width */
+  height: 100%; /* Make panels take up whole visible space */
+}
+
+.left, .right {
+  padding: 20px; /* Padding for panels */
   width: 20%;
-  background-color: #f1f1f1;
-  padding: 20px;
+  background-color: #444; /* Even darker background color for left panel */
+  z-index: 1; /* Bring left and right panels to the front */
 }
 
-#canvas {
-  margin-left: 20px;
+.left {
+  box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.3); /* Add box shadow */
 }
 
-#mode-buttons {
+.right {
+  box-shadow: -4px 0px 8px rgba(0, 0, 0, 0.3); /* Add box shadow */
+}
+
+.center {
+  background-color: #555; /* Darker background color for panels */
+  width: 60%;
+  z-index: 0; /* Send center panel to the back */
   display: flex;
+  flex-direction: row;
 }
 
-#mode-buttons button {
-  border: none;
-  background: transparent;
-  color: #666;
-  font-size: 14px;
-  font-weight: bold;
-  padding: 8px 16px;
-  margin: 0 8px 0 0;
-  cursor: pointer;
-  outline: none;
+#prompt, #negative, #generate, #layers {
+	width: 100%;
 }
 
-#mode-buttons button:active,
-#mode-buttons button:focus {
-  background: #ddd;
-  color: #333;
+#prompt, #negative {
+	resize: vertical;
+    outline: none;
+	background-color: #445044;
+	color: white;
 }
 
-#mode-buttons button:before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  margin-right: 8px;
-  vertical-align: middle;
+#negative {
+	background-color: #504444;
 }
 
-#mode-buttons button.active:before {
-  background: #666;
+#layers {
+	background-color: transparent;
+	color: white;
+}
+
+input[type="button"] {
+  font-size: 18px; /* Increase font size */
+  font-weight: bold; /* Use bold font weight */
+  font-family: sans-serif; /* Use a sans-serif font */
+}
+
+#center-right {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+}
+
+#canvas-container {
+	padding-top: 5px;
+	height: 100%;
+	width: 100%;
+}
+canvas {
+  border: 1px solid black;
+}
+
+.toolbar {
+  display: flex;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #555;
+}
+
+.vertical {
+  padding: 55px 10px;
+  flex-direction: column;
+  width: 40px;
+}
+
+.horizontal {
+  padding: 5px 0px;
+  flex-direction: row;
+  height: 40px;
+}
+
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #444;
+  color: white;
+  text-align: center;
+}
+
+.selected {
+  background-color: #6f9d6f; /* Lighter background color for selected button */
+}
+
+.vertical-toolbar-separator {
+    border-bottom: 2px solid transparent;
+}
+
+.horizontal-toolbar-separator {
+    border-right: 5px solid transparent;
 }

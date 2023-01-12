@@ -1,46 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" type="text/css" href="/static/css/style.css?v={{ cache_busting_param }}">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css" integrity="sha384-vp86vTRFVJgpjF9jiIGPEEqYqlDwgyBgEF109VFjmqGmIY/Y4HV4d3Gp2irVfcrp" crossorigin="anonymous">
   <title>Vision Quest</title>
-  <link rel="stylesheet" href="/static/css/style.css?v={{ cache_busting_param }}">
 </head>
 <body>
-	<h1><center>Vision Quest</center></h1>
-    <div id="container">
-      <div id="tools-panel">
-        <form id="form" method="POST">
-          <textarea name="prompt" placeholder="Enter text" rows="5">a photo of an astronaut riding a horse on mars</textarea>
-          <div class="slider-container">
-            <label for="steps">Steps</label>
-            <input type="range" name="steps" min="1" max="100" value="25">
-            <span id="steps-value">25</span>
-          </div>
-            <label for="use-gpu">Use GPU</label><input type="checkbox" id="use-gpu" name="use-gpu" checked>
-          <button type="submit">Generate</button>
-        </form>
-        <HR>
-		<!-- Add four toggle buttons to the panel -->
-		<div id="mode-buttons">
-		  <button id="draw-button" type="button" class="active">Draw</button>
-		  <button id="erase-button" type="button">Erase</button>
-		  <button id="select-button" type="button">Select</button>
-		  <button id="mask-button" type="button">Mask</button>
+	<div class="container">
+	  <div class="left">
+		<h1>Vision Quest</h1>
+		<textarea id="prompt" rows=8 placeholder="Enter prompt...">A fire breathing dragon made out of cardboard</textarea>
+		<textarea id="negative" rows=8 placeholder="Enter negagive prompt...">house</textarea>
+		<input type="button" id="generate" value="Generate" onclick="generate()"></input>
+		<HR>
+		<div class="container-slider">
+			<label for="steps-slider">Steps</label>
+			<input type=range id="steps-slider" min=1 max=150 value=20></input>
+			<label id="steps-label">20</label>
 		</div>
-        <div class="slider-container">
-          <label for="pen-width">Pen Width</label>
-          <input type="range" name="pen-width" min="1" max="100" value="30">
-          <span id="pen-width-value">30</span>
-        </div>
-        <div class="color-picker-container">
-          <label for="color-picker">Pen Color</label>
-          <input type="color" id="color-picker" name="color-picker" value="#000000">
-        </div>
-        <button id="clear-button" type="button">Clear</button>
-        <button id="clear-mask-button" type="button">Clear Mask</button>
-      </div>
-      <canvas id="canvas" width="512" height="512"></canvas>
-  </div>
-  <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+		<div class="container-slider">
+			<label for="guidance-slider">Prompt</label>
+			<input type=range id="guidance-slider" min=0.1 max=20 value=7.5 step=0.1></input>
+			<label id="guidance-label">7.5</label>
+		</div>
+		<div class="container-slider">
+			<label for="noise-slider">Noise</label>
+			<input type=range id="noise-slider" min=0 max=100 value=80></input>
+			<label id="noise-label">80</label>
+		</div>
+	  </div>
+	  <div class="center" id="center-panel">
+		<div class="toolbar vertical">
+			<div class="toolbar-button draw-group selected" id="move-button" data-tool="move">
+			  <i class="fas fa-arrows-alt"></i>
+			</div>
+			<div class="toolbar-button draw-group" id="brush-button" data-tool="brush">
+			  <i class="fas fa-paint-brush"></i>
+			</div>
+			<div class="toolbar-button draw-group" id="mask-button" data-tool="mask">
+			  <i class="fas fa-mask"></i>
+			</div>
+			<div class="toolbar-button draw-group" id="eraser-button" data-tool="eraser">
+			  <i class="fas fa-eraser"></i>
+			</div>
+			<div class="vertical-toolbar-separator"></div>
+			<div class="toolbar-button" id="clear-button" data-tool="clear" onclick="clearImage()">
+			  <i class="fas fa-trash"></i>
+			</div>
+		</div>
+		<div id="center-right">
+			<div class="toolbar horizontal">
+				<input type="color" id="brush-color" value="#000000">
+				<div class="toolbar-slider">
+					<div>
+					  <i class="fas fa-paint-brush"></i>
+					</div>
+					<input type=range id="brush-slider" min=1 max=150 value=30></input>
+					<label class="toolbar-label" id="brush-label">30</label>
+				</div>
+				<div class="horizontal-toolbar-separator"></div>
+				<div class="toolbar-slider">
+					<div>
+					  <i class="fas fa-mask"></i>
+					</div>
+					<input type=range id="mask-slider" min=1 max=150 value=30></input>
+					<label class="toolbar-label" id="mask-label">30</label>
+				</div>
+			</div>
+			<div id="canvas-container">
+				<canvas id="visCanvas"></canvas>
+			</div>
+		</div>
+	  </div>
+	  <div class="right"><select id="layers" size=8></select></div>
+	</div>
   <script src="/static/js/script.js?v={{ cache_busting_param }}"></script>
+  <script src="/static/js/server.js?v={{ cache_busting_param }}"></script>
 </body>
 </html>

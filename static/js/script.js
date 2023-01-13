@@ -173,7 +173,8 @@ function updateRenderImage(url) {
 	// Draw the image on the canvas when it finishes loading
 	rndrimg.onload = function() {
 		newDocument = false;
-		renderCtx.drawImage(rndrimg, 0, 0);
+		var ctx = findLayerByName('render').ctx;
+		ctx.drawImage(rndrimg, 0, 0);
 		draw();
 	}
 }
@@ -189,21 +190,26 @@ function generateModelImage() {
 	for (let lyr of layers) {
 		if (lyr.name === 'Mask')
 			continue;
-		modelCtx.drawImage(lyr.image, 0, 0);
+		modelCtx.drawImage(lyr.canvas, 0, 0);
 	}
+	
+	const pixelBuffer = new Uint32Array(modelCtx.getImageData(0, 0, modelCanvas.width, modelCanvas.height).data.buffer);
+	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
+		return 0;
 	
 	var dataURL = modelCanvas.toDataURL();
 	return dataURL;
 }
 
 function generateMaskImage() {
-	const pixelBuffer = new Uint32Array(maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data.buffer);
-	if (!pixelBuffer.some(color => color !== 0))
+	var masklyr = findLayerByName('mask');
+	const pixelBuffer = new Uint32Array(masklyr.ctx.getImageData(0, 0, masklyr.canvas.width, masklyr.canvas.height).data.buffer);
+	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
 		return 0;
 	
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
-	modelCtx.drawImage(maskCanvas, 0, 0);
+	modelCtx.drawImage(masklyr.canvas, 0, 0);
     modelCtx.globalCompositeOperation = "source-in"
 	modelCtx.beginPath();
 	modelCtx.fillStyle = '#FFF';

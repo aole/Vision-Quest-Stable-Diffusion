@@ -156,12 +156,21 @@ function findLayerIndexByName(name) {
 function selectLayer(name) {
     var idx = findLayerIndexByName(name);
     layerCtrl.selectedIndex = layers.length-1-idx;
+	currentLayer = layers[idx];
     currentCanvas = layers[idx].canvas;
     currentCtx = layers[idx].ctx;
 }
 
 function clearImage() {
 	currentCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+	var idx = layerCtrl.selectedIndex;
+	var lidx = layers.length-idx-1;
+	var lyr = layers[lidx];
+	if (!(lyr.name=='mask' || lyr.name==='brush' || lyr.name==='render')) {
+		layerCtrl.remove(idx);
+		layers.splice(lidx, 1);
+		selectLayer('brush');
+	}
 	draw();
 }
 

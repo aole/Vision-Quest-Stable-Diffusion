@@ -278,6 +278,13 @@ function draw() {
         viewportCtx.lineWidth = boundsLineWidthHighligh/scale;
     else viewportCtx.lineWidth = boundsLineWidth/scale;
     
+    var pointerWidth = 0;
+    if (currentTool === 'brush' || currentTool === 'eraser')
+        pointerWidth = document.getElementById('brush-slider').value;
+    else if (currentTool === 'mask')
+        pointerWidth = document.getElementById('mask-slider').value;
+    pointerWidth *= scale / 2.0;
+    
     for (var i=0; i<2; i++) { // alternating black and white dashes
         viewportCtx.beginPath();
         viewportCtx.moveTo(panX, panY);
@@ -309,6 +316,14 @@ function draw() {
             viewportCtx.arc(panX, panY+h/2, handleRadius/scale, 0, 2 * Math.PI);
             viewportCtx.stroke();
         }
+        
+        // brush preview
+        if (pointerWidth>0 && !spacebarDown) {
+            viewportCtx.beginPath()
+            viewportCtx.arc(prevX, prevY, pointerWidth, 0, 2 * Math.PI);
+            viewportCtx.stroke();
+        }
+        
         // Set line color
         viewportCtx.strokeStyle = "#111";
         viewportCtx.lineDashOffset = 5/scale;
@@ -363,8 +378,6 @@ viewport.addEventListener("mousemove", function(e) {
         // Calculate difference between starting position and current position
         panX += x - prevX;
         panY += y - prevY;
-
-        draw();
     } else if (drawing) {
 		// Calculate the distance between the current and previous cursor positions
 		var dx = x - prevX;
@@ -452,6 +465,15 @@ viewport.addEventListener("mousemove", function(e) {
             }
         // }
     }
+    
+    if (panning)
+        viewport.style.cursor = 'grabbing';
+    else if (spacebarDown)
+        viewport.style.cursor = 'grab';
+    else if (currentTool === 'brush' ||currentTool === 'brush' || currentTool === 'brush')
+		viewport.style.cursor = 'none';
+    else
+        viewport.style.cursor = 'default';
 
     prevX = x;
     prevY = y;
@@ -535,14 +557,12 @@ window.onload = function(e) {
 document.addEventListener('keydown', function(e) {
 	if (e.key === ' ') {
 		spacebarDown = true;
-		viewport.style.cursor = "grab";
 	}
 });
 
 document.addEventListener('keyup', function(e) {
 	if (e.key === ' ') {
 		spacebarDown = false;
-		viewport.style.cursor = "default";
 	}
 });
 

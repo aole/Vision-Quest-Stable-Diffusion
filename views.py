@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, Response, jsonify
-from stable_diffusion import sd_txt2img, sd_img2img, sd_inpainting
+from stable_diffusion import sd_txt2img, sd_img2img, sd_inpainting, sd_get_model_id, sd_change_model
 import time, base64
 from PIL import Image
 from io import BytesIO
@@ -13,7 +13,7 @@ start_from_no_image = True
 @views.route("/")
 def index():
   cache_busting_param = str(time.time())
-  return render_template('index.html', cache_busting_param=cache_busting_param)
+  return render_template('index.html', model_id=sd_get_model_id(), cache_busting_param=cache_busting_param)
 
 
 @views.route('/txt2img', methods=['POST'])
@@ -58,3 +58,9 @@ def inpainting():
   sd_inpainting(img, mask, prompt, negative, num_steps, guidance, noise);
   
   return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
+
+@views.route('/change_model', methods=['POST'])
+def change_model():
+  mid = request.form.get('model_id')
+  mid = sd_change_model(mid)
+  return jsonify({'model_id':mid})

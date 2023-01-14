@@ -79,6 +79,10 @@ html, body {
 	color: white;
 }
 
+#model_id {
+	width: 100%;
+}
+
 #negative {
 	background-color: #504444;
 }
@@ -86,6 +90,11 @@ html, body {
 #layers-list {
 	background-color: transparent;
 	color: white;
+}
+
+.container-text-button {
+	display: flex;
+	flex-direction: row;
 }
 
 input[type="button"] {
@@ -139,6 +148,13 @@ canvas {
   background-color: #444;
   color: white;
   text-align: center;
+}
+
+.toolbar-button:hover {
+  background-color: #666; /* new background color */
+  cursor: pointer; /* change cursor to pointer */
+  transform: scale(1.2); /* increase the button size by 20% */
+  transition: all 0.2s ease-in-out; /* add a smooth transition */
 }
 
 .selected {

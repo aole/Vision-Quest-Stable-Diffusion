@@ -6,8 +6,6 @@ var spacebarDown = false;
 var renderBoxWidth = 512;
 var renderBoxHeight = 512;
 
-var newDocument = true;
-
 let scale = 1.0;
 let handleRadius = 10;
 let handleRadius2 = handleRadius*handleRadius;
@@ -181,7 +179,6 @@ function updateRenderImage(url) {
 
 	// Draw the image on the canvas when it finishes loading
 	rndrimg.onload = function() {
-		newDocument = false;
 		var ctx = findLayerByName('render').ctx;
 		ctx.drawImage(rndrimg, 0, 0);
 		draw();

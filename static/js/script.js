@@ -177,6 +177,12 @@ function updateRenderImage(url) {
 	var rndrimg = new Image();
 	rndrimg.src = url;
 
+	// clear out mask and brush layers
+	var lyr = findLayerByName('mask');
+	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
+	var lyr = findLayerByName('brush');
+	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
+	
 	// Draw the image on the canvas when it finishes loading
 	rndrimg.onload = function() {
 		var ctx = findLayerByName('render').ctx;
@@ -189,12 +195,13 @@ function updateRenderImage(url) {
 var modelCanvas = document.createElement('canvas');
 modelCanvas.width = renderBoxWidth;
 modelCanvas.height = renderBoxHeight;
-var modelCtx = modelCanvas.getContext('2d');
+var modelCtx = modelCanvas.getContext('2d', {willReadFrequently: true});
+
 function generateModelImage() {
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
 	for (let lyr of layers) {
-		if (lyr.name === 'Mask')
+		if (lyr.name === 'mask')
 			continue;
 		modelCtx.drawImage(lyr.canvas, 0, 0);
 	}
@@ -326,7 +333,7 @@ function draw() {
         // brush preview
         if (pointerWidth>0 && !spacebarDown) {
             viewportCtx.beginPath()
-            viewportCtx.arc(prevX, prevY, pointerWidth, 0, 2 * Math.PI);
+            viewportCtx.arc(prevX/scale, prevY/scale, pointerWidth, 0, 2 * Math.PI);
             viewportCtx.stroke();
         }
         
@@ -352,7 +359,7 @@ viewport.addEventListener("mousedown", function(e) {
         var lineWidth = document.getElementById('brush-slider').value;
 		currentCtx.globalCompositeOperation = "source-over";
 		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
 		draw();
 	} else if (e.button === 0 && currentTool === 'eraser') {
@@ -360,7 +367,7 @@ viewport.addEventListener("mousedown", function(e) {
         var lineWidth = document.getElementById('brush-slider').value;
 		currentCtx.globalCompositeOperation = "destination-out";
 		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
 		draw();
 	} else if (e.button === 0 && currentTool === 'mask') {
@@ -368,7 +375,7 @@ viewport.addEventListener("mousedown", function(e) {
         var lineWidth = document.getElementById('mask-slider').value;
 		currentCtx.globalCompositeOperation = "source-over";
 		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth / 2, 0, 2 * Math.PI);
+		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
 		draw();
 	}
@@ -402,7 +409,7 @@ viewport.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 		}
 	} else if (erasing) {
@@ -422,7 +429,7 @@ viewport.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 		}
 	} else if (masking) {
@@ -443,7 +450,7 @@ viewport.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth / 2, 0, 2 * Math.PI);
+			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 		}
 	} else {

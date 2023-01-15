@@ -46,7 +46,8 @@ function generate() {
 
 function changeModel() {
   var model_id = document.getElementById('model_id').value;
-
+  document.getElementById('model_id').value = 'please wait ...';
+  
   var formData = new FormData();
   
   formData.append('model_id', model_id);

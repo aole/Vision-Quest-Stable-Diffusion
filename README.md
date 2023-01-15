@@ -15,3 +15,6 @@ Features:
 - mask
 - erase
 - clear
+- change models just by using model id's from the huggingface site
+	models will be downloaded as needed.
+	

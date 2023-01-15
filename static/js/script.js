@@ -20,6 +20,9 @@ let boundsLineWidthHighligh = 3;
 var brushColor = '#000';
 var maskColor = '#F88';
 
+var currentPath;
+var maskPath;
+
 // Get parent element
 var parent = document.getElementById("canvas-container");
 
@@ -121,6 +124,22 @@ mask_picker.onchange = function(e) {
 }
 
 /**
+	Automasking
+**/
+var autoMaskEnabled = false;
+function toggleAutoMask(e) {
+	var button = document.getElementById("auto-mask-button");
+	if (autoMaskEnabled) {
+		autoMaskEnabled = false;
+        button.classList.remove("selected");
+	} else {
+		autoMaskEnabled = true;
+		button.classList.add("selected");
+	}
+	draw();
+}
+
+/**
     Toolbar button click
 **/
 var buttons = document.querySelectorAll(".draw-group");
@@ -141,6 +160,9 @@ function setCurrentTool(tool) {
     // select appropriate layer
     if (tool==='brush' || tool==='mask')
         selectLayer(tool);
+	
+	if (tool==='mask')
+		autoMaskEnabled = false;
 }
 
 function findLayerByName(name) {
@@ -269,8 +291,10 @@ function draw() {
 	
 	// Draw layers onto canvas
 	for (let lyr of layers) {
-		if (lyr.name === 'mask')
+		if (lyr.name === 'mask') {
+			if (autoMaskEnabled) continue;
 			viewportCtx.globalAlpha = 0.5;
+		}
 		viewportCtx.drawImage(lyr.canvas, panX, panY);
 		viewportCtx.globalAlpha = 1;
 	}
@@ -361,6 +385,11 @@ viewport.addEventListener("mousedown", function(e) {
 		currentCtx.beginPath();
 		currentCtx.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
+		
+		if (autoMaskEnabled) {
+			maskPath = new Path2D();
+			maskPath.arc((prevX/scale-panX), (prevY/scale-panY), lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
+		}
 		draw();
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
@@ -411,6 +440,12 @@ viewport.addEventListener("mousemove", function(e) {
 			currentCtx.beginPath();
 			currentCtx.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
+			
+			if (autoMaskEnabled) {
+				path = new Path2D();
+				path.arc((prevX/scale-panX) + xIncrement * i, (prevY/scale-panY) + yIncrement * i, lineWidth*scale / 2+5, 0, 2 * Math.PI);
+				maskPath.addPath(path);
+			}
 		}
 	} else if (erasing) {
 		// Calculate the distance between the current and previous cursor positions
@@ -498,8 +533,13 @@ viewport.addEventListener("mousemove", function(e) {
 viewport.addEventListener("mouseup", function(e) {
     // Check if left mouse button was released
     if (e.button === 0) {
+		if (drawing && autoMaskEnabled) {
+			var lyr = findLayerByName('mask');
+			lyr.ctx.fill(maskPath);
+		}
         // Reset panning flag
         panning = drawing = erasing = masking = false;
+		draw();
     }
 });
 

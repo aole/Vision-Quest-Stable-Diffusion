@@ -1,6 +1,6 @@
 # stable_diffusion.py
 
-from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy
+from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy
 import torch
 import tempfile
 import torch
@@ -11,12 +11,20 @@ model_id = "runwayml/stable-diffusion-v1-5"
 # model_id = "CompVis/stable-diffusion-v1-4"
 
 device = "cuda"
-
+'''
 def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
     print(f'txt2img ({model_id}) {prompt}')
     pipe = StableDiffusionPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
     image = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images[0]
+    
+    image.save(imgfile)
+'''
+def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
+    print(f'custom pipeline ({model_id}) {prompt}')
+    pipe = DiffusionPipeline.from_pretrained(model_id, custom_pipeline="./pipelines/txt2img")
+    pipe = pipe.to(device)
+    image = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative)[0]
     
     image.save(imgfile)
 

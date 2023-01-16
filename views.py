@@ -23,7 +23,8 @@ def txt2img():
   num_steps = int(request.form.get('numSteps'))
   guidance = float(request.form.get('guidance'))
   
-  sd_txt2img(prompt, negative, num_steps, guidance);
+  outimg = sd_txt2img(prompt, negative, num_steps, guidance);
+  outimg[0].save('static/images/image.png')
   
   return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
 
@@ -38,7 +39,8 @@ def img2img():
   
   img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
   
-  sd_img2img(img, prompt, negative, num_steps, guidance, noise);
+  outimg = sd_img2img(img, prompt, negative, num_steps, guidance, noise);
+  outimg[0].save('static/images/image.png')
   
   return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
 
@@ -55,7 +57,8 @@ def inpainting():
   img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
   mask = Image.open(BytesIO(base64.b64decode(mask_data))).convert("RGB")
   
-  sd_inpainting(img, mask, prompt, negative, num_steps, guidance, noise);
+  outimg = sd_inpainting(img, mask, prompt, negative, num_steps, guidance, noise);
+  outimg[0].save('static/images/image.png')
   
   return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
 

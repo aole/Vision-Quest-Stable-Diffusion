@@ -79,9 +79,10 @@ class Txt2ImgPipeline(DiffusionPipeline):
         shape = (batch_size, self.unet.in_channels, height // self.vae_scale_factor, width // self.vae_scale_factor)
         
         # Sample gaussian noise to begin loop
-        generator = torch.Generator(self.device) #.manual_seed(44444)
+        # generator = torch.Generator(self.device).manual_seed(44444)
         
-        latents = torch.randn(shape, generator=generator, device=self.device)
+        # latents = torch.randn(shape, generator=generator, device=self.device)
+        latents = torch.randn(shape, device=self.device)
 
         # set step values
         self.scheduler.set_timesteps(num_inference_steps)

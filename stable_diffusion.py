@@ -5,8 +5,6 @@ import torch
 import tempfile
 import torch
 
-imgfile = 'static/images/image.png'
-    
 model_id = "runwayml/stable-diffusion-v1-5"
 # model_id = "CompVis/stable-diffusion-v1-4"
 
@@ -24,28 +22,29 @@ def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
     print(f'custom pipeline ({model_id}) {prompt}')
     pipe = DiffusionPipeline.from_pretrained(model_id, custom_pipeline="./pipelines/txt2img")
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative)[0]
+    images = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative)
     
-    image.save(imgfile)
+    return images
 
 def sd_img2img(image, prompt, negative='', steps=20, guidance=7.5, noise=.8):
     print(f'img2img ({model_id}) {prompt}')
     pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, strength=noise, image=image, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images[0]
+    images = pipe(prompt=prompt, strength=noise, image=image, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images
     
-    image.save(imgfile)
+    return images
 
-def sd_inpainting(image, mask, prompt, negative='', steps=20, guidance=7.5, noise=.8):
+def sd_inpainting(image, mask, prompt, negative='', batch_size=1, steps=20, guidance=7.5, noise=.8):
     print(f'inpainting ({model_id}) {prompt}')
     pipe = StableDiffusionInpaintPipeline.from_pretrained("runwayml/stable-diffusion-inpainting", safety_checker=None)
     # pipe = StableDiffusionInpaintPipelineLegacy.from_pretrained(model_id, safety_checker=None)
     pipe = pipe.to(device)
-    image = pipe(prompt=prompt, image=image, mask_image=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images[0]
+    
+    for i in range(batch_size):
+        images = pipe(prompt=prompt, image=image, mask_image=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images
+        yield images
     # image = pipe(prompt=prompt, strength=noise, image=image, mask_image=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images[0]
     
-    image.save(imgfile)
-
 def sd_get_model_id():
     return model_id
     

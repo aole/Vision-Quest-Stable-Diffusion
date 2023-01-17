@@ -1,6 +1,7 @@
 # stable_diffusion.py
 
 from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy
+from diffusers import DDIMScheduler
 import torch
 import tempfile
 import torch
@@ -34,10 +35,11 @@ def sd_img2img(image, prompt, negative='', steps=20, guidance=7.5, noise=.8):
     
     return images
 
-def sd_inpainting(image, mask, prompt, negative='', batch_size=1, steps=20, guidance=7.5, noise=.8):
+def sd_inpainting(image, mask, prompt, negative='', steps=20, guidance=7.5, noise=.8, batch_size=1):
     print(f'inpainting ({model_id}) {prompt}')
     pipe = StableDiffusionInpaintPipeline.from_pretrained("runwayml/stable-diffusion-inpainting", safety_checker=None)
-    # pipe = StableDiffusionInpaintPipelineLegacy.from_pretrained(model_id, safety_checker=None)
+    #ddim = DDIMScheduler.from_pretrained(model_id, subfolder="scheduler")
+    #pipe = StableDiffusionInpaintPipelineLegacy.from_pretrained(model_id, scheduler=ddim, safety_checker=None)
     pipe = pipe.to(device)
     
     for i in range(batch_size):

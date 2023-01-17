@@ -18,7 +18,7 @@ let boundsLineWidth = 1;
 let boundsLineWidthHighligh = 3;
 
 var brushColor = '#000';
-var maskColor = '#F88';
+var maskColor = '#F99';
 
 var currentPath;
 var maskPath;
@@ -241,7 +241,7 @@ function generateMaskImage() {
 	const pixelBuffer = new Uint32Array(masklyr.ctx.getImageData(0, 0, masklyr.canvas.width, masklyr.canvas.height).data.buffer);
 	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
 		return 0;
-	
+	/*
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
 	modelCtx.drawImage(masklyr.canvas, 0, 0);
@@ -252,6 +252,8 @@ function generateMaskImage() {
 	modelCtx.fill();
 	
 	var dataURL = modelCanvas.toDataURL();
+	*/
+	var dataURL = maskCanvas.toDataURL();
 	return dataURL;
 }
 

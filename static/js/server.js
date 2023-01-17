@@ -44,9 +44,32 @@ function generate() {
     xhr.send(formData);
 }
 
+function addModelToList(model_id) {
+  let datalist = document.getElementById("model-ids");
+
+  // check if the option already exists
+  let options = datalist.options;
+  let optionExists = false;
+  for (let i = 0; i < options.length; i++) {
+    if (options[i].value === model_id) {
+      optionExists = true;
+      break;
+    }
+  }
+
+  // if the option does not exist, create it and append to the datalist
+  if (!optionExists) {
+    let newOption = document.createElement("option");
+    newOption.value = model_id;
+    datalist.appendChild(newOption);
+  }
+  
+  document.getElementById('model-id-input').value = model_id;
+}
+
 function changeModel() {
-  var model_id = document.getElementById('model_id').value;
-  document.getElementById('model_id').value = 'please wait ...';
+  var model_id = document.getElementById('model-id-input').value;
+  document.getElementById('model-id-input').value = 'please wait ...';
   
   var formData = new FormData();
   
@@ -57,7 +80,7 @@ function changeModel() {
     xhr.onload = function () {
       if (xhr.status === 200) {
         model_id = JSON.parse(xhr.response).model_id;
-        document.getElementById('model_id').value = model_id;
+        addModelToList(model_id);
       } else {
         console.error('Error:', xhr);
       }

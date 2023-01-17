@@ -32,12 +32,13 @@
 			<label id="noise-label">80</label>
 		</div>
 		<hr>
-		<div class="container-text-button">
-			<input type='text' id='model_id' value={{ model_id }}>
-			<div class="toolbar-button" onclick="changeModel()">
-				<i class="fas fa-exchange-alt"></i>
-			</div>
-		</div>
+        <input list="model-ids" id="model-id-input" value={{ model_id }} size=4 onchange="changeModel()">
+        <datalist id="model-ids">
+            <option value=""></option>
+            {% for id in model_ids %}
+                <option value="{{ id }}">
+            {% endfor %}
+        </datalist>
 	  </div>
 	  <div class="center" id="center-panel">
 		<div class="toolbar vertical">

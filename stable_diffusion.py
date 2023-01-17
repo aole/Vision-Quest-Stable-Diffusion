@@ -1,15 +1,29 @@
 # stable_diffusion.py
 
 from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, StableDiffusionInpaintPipeline, StableDiffusionInpaintPipelineLegacy
+import diffusers as df
 from diffusers import DDIMScheduler
 import torch
-import tempfile
-import torch
+import tempfile, os
+
+cache_dir = df.utils.DIFFUSERS_CACHE
+repo_type = "model"
 
 model_id = "runwayml/stable-diffusion-v1-5"
 # model_id = "CompVis/stable-diffusion-v1-4"
 
 device = "cuda"
+
+def sd_get_cached_models_list():
+    models = []
+
+    for repo_cache in os.listdir(cache_dir):
+        if os.path.isdir(os.path.join(cache_dir, repo_cache)):
+            object_id = repo_cache[len(f"{repo_type}s--"):]
+            model_id = object_id.replace("--", "/")
+            models.append(model_id)
+    return models
+
 '''
 def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
     print(f'txt2img ({model_id}) {prompt}')

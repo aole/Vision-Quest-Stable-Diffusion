@@ -168,3 +168,8 @@ canvas {
 .horizontal-toolbar-separator {
     border-right: 5px solid transparent;
 }
+
+#model-id-input {
+    width: 100%
+}
+

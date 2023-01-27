@@ -73,6 +73,7 @@ var panning = false;
 var drawing = false;
 var masking = false;
 var erasing = false;
+var moving = false;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -280,18 +281,18 @@ function draw() {
     
 	// Draw vertical lines
 	for (var x = pansX%128; x < viewport.width/scale; x += 128) {
-	  viewportCtx.beginPath();
-	  viewportCtx.moveTo(x, 0);
-	  viewportCtx.lineTo(x, viewport.height/scale);
-	  viewportCtx.stroke();
+        viewportCtx.beginPath();
+        viewportCtx.moveTo(x, 0);
+        viewportCtx.lineTo(x, viewport.height/scale);
+        viewportCtx.stroke();
 	}
 
 	// Draw horizontal lines
 	for (var y = pansY%128; y < viewport.height/scale; y += 128) {
-	  viewportCtx.beginPath();
-	  viewportCtx.moveTo(0, y);
-	  viewportCtx.lineTo(viewport.width/scale, y);
-	  viewportCtx.stroke();
+        viewportCtx.beginPath();
+        viewportCtx.moveTo(0, y);
+        viewportCtx.lineTo(viewport.width/scale, y);
+        viewportCtx.stroke();
 	}
 	
 	// Draw layers onto canvas
@@ -300,7 +301,7 @@ function draw() {
 			if (autoMaskEnabled) continue;
 			viewportCtx.globalAlpha = 0.5;
 		}
-		viewportCtx.drawImage(lyr.canvas, pansX, pansY);
+		viewportCtx.drawImage(lyr.canvas, pansX + lyr.x, pansY + lyr.y);
 		viewportCtx.globalAlpha = 1;
 	}
 	
@@ -374,7 +375,7 @@ function draw() {
 
 // Set up mousedown event listener
 viewport.addEventListener("mousedown", function(e) {
-	panning = drawing = erasing = masking = false;
+	panning = drawing = erasing = masking = moving = false;
 
     prevX = e.offsetX;
     prevY = e.offsetY;
@@ -391,12 +392,12 @@ viewport.addEventListener("mousedown", function(e) {
         var lineWidth = document.getElementById('brush-slider').value;
 		currentCtx.globalCompositeOperation = "source-over";
 		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-pansX), (prevY/scale-pansY), lineWidth*scale / 2, 0, 2 * Math.PI);
+		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
 		
 		if (autoMaskEnabled) {
 			maskPath = new Path2D();
-			maskPath.arc((prevX/scale-pansX), (prevY/scale-pansY), lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
+			maskPath.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
 		}
 		draw();
 	} else if (e.button === 0 && currentTool === 'eraser') {
@@ -404,7 +405,7 @@ viewport.addEventListener("mousedown", function(e) {
         var lineWidth = document.getElementById('brush-slider').value;
 		currentCtx.globalCompositeOperation = "destination-out";
 		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-pansX), (prevY/scale-pansY), lineWidth*scale / 2, 0, 2 * Math.PI);
+		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
 		draw();
 	} else if (e.button === 0 && currentTool === 'mask') {
@@ -412,8 +413,11 @@ viewport.addEventListener("mousedown", function(e) {
         var lineWidth = document.getElementById('mask-slider').value;
 		currentCtx.globalCompositeOperation = "source-over";
 		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-pansX), (prevY/scale-pansY), lineWidth*scale / 2, 0, 2 * Math.PI);
+		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
+		draw();
+	} else if (e.button === 0 && currentTool === 'move' && (currentLayer.name != 'brush' && currentLayer.name != 'mask')) {
+        moving = true;
 		draw();
 	}
 });
@@ -438,7 +442,7 @@ viewport.addEventListener("mousemove", function(e) {
 		var distance = Math.sqrt(dx * dx + dy * dy);
 
 		// Calculate the number of intermediate points to draw
-		var steps = Math.max(Math.abs(dx), Math.abs(dy));
+		var steps = Math.max(Math.abs(dx), Math.abs(dy)) * scale;
 
 		// Calculate the x and y increments for each intermediate point
 		var xIncrement = dx / steps;
@@ -449,12 +453,12 @@ viewport.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-pansX) + xIncrement * i, (prevY/scale-pansY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
+			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 			
 			if (autoMaskEnabled) {
 				path = new Path2D();
-				path.arc((prevX/scale-pansX) + xIncrement * i, (prevY/scale-pansY) + yIncrement * i, lineWidth*scale / 2+5, 0, 2 * Math.PI);
+				path.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2+5, 0, 2 * Math.PI);
 				maskPath.addPath(path);
 			}
 		}
@@ -475,7 +479,7 @@ viewport.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-pansX) + xIncrement * i, (prevY/scale-pansY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
+			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 		}
 	} else if (masking) {
@@ -496,33 +500,38 @@ viewport.addEventListener("mousemove", function(e) {
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-pansX) + xIncrement * i, (prevY/scale-pansY) + yIncrement * i, lineWidth*scale / 2, 0, 2 * Math.PI);
+			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 		}
-	} else {
+	} else if (moving) {
+        // move the current layer
+		var dx = x - prevX;
+		var dy = y - prevY;
+        
+        currentLayer.x += dx/scale;
+        currentLayer.y += dy/scale;
+    } else { // draw handles
         var lyridx = layers.length-layerCtrl.selectedIndex-1;
         var lyr = layers[lyridx];
-        // if (lyr.name === 'Render') {
-            var w = lyr.canvas.width;
-            var h = lyr.canvas.height;
-            
-            var mx = x/scale-pansX;
-            var my = y/scale-pansY;
-            
-            handleMouse = 0;
-            if (distance2(mx, my, w/2, 0)<handleRadius2) handleMouse = 1;
-            if (distance2(mx, my, w, h/2)<handleRadius2) handleMouse = 2;
-            if (distance2(mx, my, w/2, h)<handleRadius2) handleMouse = 3;
-            if (distance2(mx, my, 0, h/2)<handleRadius2) handleMouse = 4;
-            
-            pickMouse = 0;
-            if (handleMouse===0){
-                if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my)<=pickRadius) pickMouse = 1;
-                if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx)<=pickRadius) pickMouse = 2;
-                if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my-h)<=pickRadius) pickMouse = 3;
-                if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx-w)<=pickRadius) pickMouse = 4;
-            }
-        // }
+        var w = lyr.canvas.width;
+        var h = lyr.canvas.height;
+        
+        var mx = x/scale-pansX;
+        var my = y/scale-pansY;
+        
+        handleMouse = 0;
+        if (distance2(mx, my, w/2, 0)<handleRadius2) handleMouse = 1;
+        if (distance2(mx, my, w, h/2)<handleRadius2) handleMouse = 2;
+        if (distance2(mx, my, w/2, h)<handleRadius2) handleMouse = 3;
+        if (distance2(mx, my, 0, h/2)<handleRadius2) handleMouse = 4;
+        
+        pickMouse = 0;
+        if (handleMouse===0){
+            if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my)<=pickRadius) pickMouse = 1;
+            if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx)<=pickRadius) pickMouse = 2;
+            if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my-h)<=pickRadius) pickMouse = 3;
+            if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx-w)<=pickRadius) pickMouse = 4;
+        }
     }
     
     if (panning)
@@ -550,7 +559,7 @@ viewport.addEventListener("mouseup", function(e) {
 		}
     }
     // Reset flags
-    panning = drawing = erasing = masking = false;
+    panning = drawing = erasing = masking = moving = false;
     draw();
 });
 
@@ -561,10 +570,11 @@ layerCtrl.addEventListener("change", function(e) {
 
 function addLayer(canvas, name, position=-1) {
     var ctx = canvas.getContext('2d');
+    var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0}
     if (position===-1)
-        layers.push({name: name, canvas: canvas, ctx: ctx});
+        layers.push(lyr);
     else
-        layers.splice(position, 0, {name: name, canvas: canvas, ctx: ctx});
+        layers.splice(position, 0, lyr);
 	
 	layerCtrl.options.length = 0;
 	for (let i=layers.length-1; i>=0; i--) {

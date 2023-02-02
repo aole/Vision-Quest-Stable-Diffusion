@@ -12,7 +12,7 @@ repo_type = "model"
 model_id = "runwayml/stable-diffusion-v1-5"
 # model_id = "CompVis/stable-diffusion-v1-4"
 
-device = "cuda"
+device = "cuda" if torch.cuda.is_available() else 'cpu'
 
 def sd_get_cached_models_list():
     models = []
@@ -35,17 +35,28 @@ def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
 '''
 def sd_txt2img(prompt, negative='', steps=20, guidance=7.5):
     print(f'custom pipeline ({model_id}) {prompt}')
-    pipe = DiffusionPipeline.from_pretrained(model_id, custom_pipeline="./pipelines/txt2img")
+    pipe = DiffusionPipeline.from_pretrained(
+        model_id,
+        custom_pipeline="./pipelines/txt2img",
+    
+        # torch_dtype=torch.float16,
+    )
     pipe = pipe.to(device)
     images = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative)
     
     return images
 
 def sd_img2img(image, prompt, negative='', steps=20, guidance=7.5, noise=.8):
-    print(f'img2img ({model_id}) {prompt}')
-    pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
+    print(f'img2img ({model_id}) {prompt}. Steps: {steps}', flush=True)
+    # pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_id, safety_checker=None)
+    pipe = DiffusionPipeline.from_pretrained(
+        model_id,
+        custom_pipeline="./pipelines/img2img",
+    
+        # torch_dtype=torch.float16,
+    )
     pipe = pipe.to(device)
-    images = pipe(prompt=prompt, strength=noise, image=image, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative).images
+    images = pipe(prompt=prompt, strength=noise, image=image, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative)
     
     return images
 

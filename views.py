@@ -41,7 +41,7 @@ def img2img():
   
   img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
   
-  outimg = sd_img2img(img, prompt, negative, num_steps, guidance, noise);
+  outimg = sd_img2img(img, prompt, negative, num_steps, guidance, noise)
   print(f'Num images generated: {len(outimg)}', flush=True)
   
   outimg[0].save('static/images/image.png')

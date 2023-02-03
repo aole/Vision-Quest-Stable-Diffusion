@@ -1,5 +1,7 @@
 # basepipeline.py
 
+from typing import Optional
+
 import torch
 import numpy as np
 from diffusers import DiffusionPipeline
@@ -33,8 +35,7 @@ class BasePipeline(DiffusionPipeline):
         for i, image in enumerate(images):
             image.save(f'./temp/{t}_latent_{i}.jpg')
         
-    @torch.no_grad()
-    def __call__(self, prompt, batch_size: int = 1, num_inference_steps: int = 50, guidance_scale=7.5, negative_prompt=''):
+    def encode_prompt(self, prompt, negative_prompt):
         # encode prompt
         text_inputs = self.tokenizer(
             prompt,
@@ -72,11 +73,24 @@ class BasePipeline(DiffusionPipeline):
         # For classifier free guidance, we need to do two forward passes.
         # Here we concatenate the unconditional and text embeddings into a single batch
         # to avoid doing two forward passes
-        text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
+        return torch.cat([uncond_embeddings, text_embeddings])
 
-        # 0. Default height and width to unet
-        height = self.unet.config.sample_size * self.vae_scale_factor
-        width = self.unet.config.sample_size * self.vae_scale_factor
+    @torch.no_grad()
+    def __call__(
+        self,
+        prompt,
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        batch_size: Optional[int] = 1,
+        num_inference_steps: Optional[int] = 50,
+        guidance_scale=7.5,
+        negative_prompt=''
+    ):
+        text_embeddings = self.encode_prompt(prompt, negative_prompt)
+        
+        # Default height and width to unet
+        height = height or self.unet.config.sample_size * self.vae_scale_factor
+        width = width or self.unet.config.sample_size * self.vae_scale_factor
         
         #prepare latents
         shape = (batch_size, self.unet.in_channels, height // self.vae_scale_factor, width // self.vae_scale_factor)
@@ -85,7 +99,7 @@ class BasePipeline(DiffusionPipeline):
         # generator = torch.Generator(self.device).manual_seed(44444)
         
         # latents = torch.randn(shape, generator=generator, device=self.device)
-        latents = torch.randn(shape, device=self.device)
+        latents = torch.randn(shape, device=self.device, dtype=text_embeddings.dtype)
 
         # set step values
         self.scheduler.set_timesteps(num_inference_steps)

@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from diffusers import DiffusionPipeline
 from PIL import Image
-
+from accelerate import cpu_offload
 
 class BasePipeline(DiffusionPipeline):
     def __init__(self, vae, text_encoder, tokenizer, unet, scheduler):
@@ -35,10 +35,10 @@ class BasePipeline(DiffusionPipeline):
         for i, image in enumerate(images):
             image.save(f'./temp/{t}_latent_{i}.jpg')
         
-    def encode_prompt(self, prompt, negative_prompt):
+    def encode_prompt(self, prompt, negative_prompt, batch_size=1):
         # encode prompt
         text_inputs = self.tokenizer(
-            prompt,
+            [prompt]*batch_size,
             padding="max_length",
             max_length=self.tokenizer.model_max_length,
             truncation=True,
@@ -52,10 +52,15 @@ class BasePipeline(DiffusionPipeline):
         )
         text_embeddings = text_embeddings[0]
         
-        # classifier free guidance
-        uncond_tokens = [negative_prompt]
+        text_embeddings = text_embeddings.to(dtype=self.text_encoder.dtype, device=self.device)
+        bs_embed, seq_len, _ = text_embeddings.shape
+        text_embeddings = text_embeddings.repeat(1, 1, 1)
+        text_embeddings = text_embeddings.view(bs_embed, seq_len, -1)
         
-        max_length = text_input_ids.shape[-1]
+        # negative prompt
+        uncond_tokens = [negative_prompt] * batch_size
+        
+        max_length = text_input_ids.shape[1]
         uncond_input = self.tokenizer(
             uncond_tokens,
             padding="max_length",
@@ -70,11 +75,25 @@ class BasePipeline(DiffusionPipeline):
         )
         uncond_embeddings = uncond_embeddings[0]
 
+        seq_len = uncond_embeddings.shape[1]
+        uncond_embeddings = uncond_embeddings.to(dtype=self.text_encoder.dtype, device=self.device)
+        uncond_embeddings = uncond_embeddings.repeat(1, 1, 1)
+        uncond_embeddings = uncond_embeddings.view(batch_size, seq_len, -1)
+        
         # For classifier free guidance, we need to do two forward passes.
         # Here we concatenate the unconditional and text embeddings into a single batch
         # to avoid doing two forward passes
         return torch.cat([uncond_embeddings, text_embeddings])
 
+    def enable_vae_slicing(self):
+        self.vae.enable_slicing()
+        
+    def enable_sequential_cpu_offload(self, gpu_id=0):
+        dv = torch.device(f"cuda:{0}")
+
+        for cpu_offloaded_model in [self.unet, self.text_encoder, self.vae]:
+            cpu_offload(cpu_offloaded_model, dv)
+        
     @torch.no_grad()
     def __call__(
         self,
@@ -86,7 +105,7 @@ class BasePipeline(DiffusionPipeline):
         guidance_scale=7.5,
         negative_prompt=''
     ):
-        text_embeddings = self.encode_prompt(prompt, negative_prompt)
+        text_embeddings = self.encode_prompt(prompt, negative_prompt, batch_size)
         
         # Default height and width to unet
         height = height or self.unet.config.sample_size * self.vae_scale_factor
@@ -98,7 +117,7 @@ class BasePipeline(DiffusionPipeline):
         # Sample gaussian noise to begin loop
         # generator = torch.Generator(self.device).manual_seed(44444)
         
-        # latents = torch.randn(shape, generator=generator, device=self.device)
+        # latents = torch.randn(shape, generator=generator, device=self.device, dtype=text_embeddings.dtype)
         latents = torch.randn(shape, device=self.device, dtype=text_embeddings.dtype)
 
         # set step values

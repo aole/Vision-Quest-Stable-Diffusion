@@ -1,5 +1,6 @@
 
 import torch
+import numpy
 
 from pipelines.basepipeline import BasePipeline
 
@@ -10,15 +11,19 @@ pipe = BasePipeline.from_pretrained(
     torch_dtype=torch.float16,
     revision="fp16",
 )
+pipe.enable_xformers_memory_efficient_attention()
+
 pipe = pipe.to(device)
 
 images = pipe(
     prompt='beautiful house, country side, hills, trees, lake',
+    width=512,
+    height=512,
+    batch_size=4,
     num_inference_steps=20,
     guidance_scale=7.5,
-    width=768,
-    height=512,
-    negative_prompt='cropped, deformed',
+    negative_prompt='green, cropped, deformed',
 )
 
-images[0].save('temp/test.png')
+for i, image in enumerate(images):
+    image.save(f'temp/test{i}.png')

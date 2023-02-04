@@ -1,4 +1,4 @@
-
+from PIL import Image
 import torch
 import numpy
 
@@ -15,14 +15,18 @@ pipe.enable_xformers_memory_efficient_attention()
 
 pipe = pipe.to(device)
 
+image = Image.open('temp/img1.jpg')
+
 images = pipe(
     prompt='beautiful house, country side, hills, trees, lake',
-    width=512,
+    image=image,
+    strength=0.75,
+    width=768,
     height=512,
     batch_size=4,
     num_inference_steps=20,
     guidance_scale=7.5,
-    negative_prompt='green, cropped, deformed',
+    negative_prompt='red, cropped, deformed',
 )
 
 for i, image in enumerate(images):

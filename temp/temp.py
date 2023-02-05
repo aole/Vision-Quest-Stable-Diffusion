@@ -15,18 +15,20 @@ pipe.enable_xformers_memory_efficient_attention()
 
 pipe = pipe.to(device)
 
-image = Image.open('temp/img1.jpg')
+image = Image.open('temp/test.png')
+mask = Image.open('temp/image_3.png')
 
 images = pipe(
-    prompt='beautiful house, country side, hills, trees, lake',
+    prompt='humming bird',
     image=image,
-    strength=0.75,
-    width=768,
+    mask=mask,
+    strength=.85,
+    width=512,
     height=512,
     batch_size=4,
     num_inference_steps=20,
     guidance_scale=7.5,
-    negative_prompt='red, cropped, deformed',
+    negative_prompt='cropped, deformed',
 )
 
 for i, image in enumerate(images):

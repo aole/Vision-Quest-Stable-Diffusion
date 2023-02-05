@@ -1,33 +1,46 @@
 # basepipeline.py
 
 from typing import Optional
+from copy import deepcopy
 
 import torch
 import numpy as np
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, DDIMScheduler
 from PIL import Image
 from accelerate import cpu_offload
 
-def preprocess(image, width, height):
-    if isinstance(image, torch.Tensor):
-        return image
-    elif isinstance(image, Image.Image):
+def prepare_mask_and_masked_image(image, mask, width, height):
+    w, h = width, height
+    # preprocess image
+    if isinstance(image, (Image.Image, np.ndarray)):
         image = [image]
 
-    if isinstance(image[0], Image.Image):
-        # w, h = image[0].size
-        w, h = width, height
-        # w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
-
-        image = [np.array(i.resize((w, h), resample=Image.Resampling.LANCZOS))[None, :] for i in image]
+    if isinstance(image, list) and isinstance(image[0], Image.Image):
+        image = [i.resize((w, h), resample=Image.Resampling.LANCZOS) for i in image]
+        image = [np.array(i.convert("RGB"))[None, :] for i in image]
         image = np.concatenate(image, axis=0)
-        image = np.array(image).astype(np.float16) / 255.0
-        image = image.transpose(0, 3, 1, 2)
-        image = 2.0 * image - 1.0
-        image = torch.from_numpy(image)
-    elif isinstance(image[0], torch.Tensor):
-        image = torch.cat(image, dim=0)
-    return image
+        
+    image = image.transpose(0, 3, 1, 2)
+    image = torch.from_numpy(image).to(dtype=torch.float16) / 127.5 - 1.0
+
+    if mask is not None:
+        # preprocess mask
+        if isinstance(mask, (Image.Image, np.ndarray)):
+            mask = [mask]
+
+        if isinstance(mask, list) and isinstance(mask[0], Image.Image):
+            mask = [i.resize((w, h), resample=Image.Resampling.LANCZOS) for i in mask]
+            mask = np.concatenate([np.array(m.convert("L"))[None, None, :] for m in mask], axis=0)
+            mask = mask.astype(np.float32) / 255.0
+            # mask = np.tile(mask, (4, 1, 1))
+            
+        mask[mask < 0.5] = 0
+        mask[mask >= 0.5] = 1
+        mask = torch.from_numpy(mask)
+
+        # image = image * (mask < 0.5)
+
+    return image, mask
 
 class BasePipeline(DiffusionPipeline):
     def __init__(self, vae, text_encoder, tokenizer, unet, scheduler):
@@ -35,6 +48,7 @@ class BasePipeline(DiffusionPipeline):
 
         self.register_modules(vae=vae, text_encoder=text_encoder, tokenizer=tokenizer, unet=unet, scheduler=scheduler)
         self.vae_scale_factor = 2 ** (len(self.vae.config.block_out_channels) - 1)
+        self.scheduler = DDIMScheduler.from_config(self.scheduler.config)
 
     def latents_to_images(self, latents):
         latents = 1 / 0.18215 * latents
@@ -133,6 +147,7 @@ class BasePipeline(DiffusionPipeline):
         height: Optional[int] = None,
         width: Optional[int] = None,
         image: Optional[Image.Image] = None,
+        mask: Optional[Image.Image] = None,
         strength: Optional[float] = 0.75,
         batch_size: Optional[int] = 1,
         num_inference_steps: Optional[int] = 50,
@@ -148,7 +163,7 @@ class BasePipeline(DiffusionPipeline):
         
         # if image 2 image
         if image:
-            image = preprocess(image, width, height)
+            image, mask = prepare_mask_and_masked_image(image, mask, width, height)
         else:
             strength = 1.0
         
@@ -169,21 +184,38 @@ class BasePipeline(DiffusionPipeline):
         if image is not None:
             image = image.to(device=self.device, dtype=dtype)
             img_latents = self.vae.encode(image).latent_dist.sample()
-            # img_latents = self.vae_scale_factor * img_latents
-            # img_latents = self.vae.scaling_factor * img_latents
             img_latents = 0.18215 * img_latents
             img_latents = torch.cat([img_latents], dim=0)
-            shape = img_latents.shape
+            # shape = img_latents.shape
             
+            latents_orig = img_latents
             latents = self.scheduler.add_noise(img_latents, noise, latent_timestep)
         else:
             latents = noise
+        
+        if mask is not None:
+            mask = torch.nn.functional.interpolate(
+                # mask, size=(int(0.18215*height), int(0.18215*width))
+                mask, size=(height//self.vae_scale_factor, width//self.vae_scale_factor)
+                
+            )
+            mask = mask.to(device=self.device, dtype=dtype)
+            if mask.shape[0] < batch_size:
+                mask = mask.repeat(batch_size // mask.shape[0], 1, 1, 1)
+            # mask = torch.cat([mask] * 2)
+                
+            # latents_orig = deepcopy(latents)
+            # masked_image_latents = torch.cat([masked_image_latents] * 2)
             
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
                 # self.save_latents(i, latents)
                 latent_model_input = torch.cat([latents] * 2)
+                
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+                # if mask is not None:
+                #    print(latent_model_input.shape, mask.shape, masked_image_latents.shape)
+                #    latent_model_input = torch.cat([latent_model_input, mask, masked_image_latents], dim=1)
                 
                 # 1. predict noise model_output
                 noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings).sample
@@ -197,7 +229,15 @@ class BasePipeline(DiffusionPipeline):
                 # do x_t -> x_t-1
                 latents = self.scheduler.step(noise_pred, t, latents).prev_sample
                 
+                if mask is not None:
+                    init_latents_proper = self.scheduler.add_noise(latents_orig, noise, torch.tensor([t]))
+                    latents = (init_latents_proper * (1-mask)) + (latents * (mask))
+                    
                 progress_bar.update()
 
+        if mask is not None:
+            pass
+            # latents = (latents_orig * (1-mask)) + (latents * (mask))
+            
         return self.latents_to_images(latents)
         

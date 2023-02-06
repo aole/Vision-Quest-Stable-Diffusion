@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, Response, jsonify
-from stable_diffusion import sd_txt2img, sd_img2img, sd_inpainting, sd_get_model_id, sd_change_model, sd_get_cached_models_list
+from stable_diffusion import sd_generate, sd_get_model_id, sd_change_model, sd_get_cached_models_list
 import time, base64
 from PIL import Image
 from io import BytesIO
@@ -24,7 +24,7 @@ def txt2img():
   num_steps = int(request.form.get('numSteps'))
   guidance = float(request.form.get('guidance'))
   
-  outimg = sd_txt2img(prompt, negative, num_steps, guidance);
+  outimg = sd_generate(prompt=prompt, negative=negative, steps=num_steps, guidance=guidance);
   print(f'Num images generated: {len(outimg)}', flush=True)
   outimg[0].save('static/images/image.png')
   
@@ -41,7 +41,7 @@ def img2img():
   
   img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
   
-  outimg = sd_img2img(img, prompt, negative, num_steps, guidance, noise)
+  outimg = sd_generate(image=img, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise)
   print(f'Num images generated: {len(outimg)}', flush=True)
   
   outimg[0].save('static/images/image.png')
@@ -67,9 +67,9 @@ def inpainting():
   pastemask = Image.fromarray(npimg)
   
   mask = mask.convert("RGB")
-  outimg = sd_inpainting(img, mask, prompt, negative, num_steps, guidance, noise)
-  outimg = next(outimg)[0]
-  outimg.paste(img, (0,0), pastemask)
+  outimg = sd_generate(image=img, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise)
+  outimg = outimg[0]
+  # outimg.paste(img, (0,0), pastemask)
   
   outimg.save('static/images/image.png')
   

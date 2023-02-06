@@ -43,8 +43,8 @@ var layers = [];
 var layerCtrl = document.getElementById("layers-list");
 
 // Set up image for rendering
-var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
-addLayer(renderCanvas, "render");
+//var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
+//addLayer(renderCanvas, "render");
 
 // Set up image for drawing
 var drawCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
@@ -208,9 +208,11 @@ function updateRenderImage(url) {
 	
 	// Draw the image on the canvas when it finishes loading
 	rndrimg.onload = function() {
-		var ctx = findLayerByName('render').ctx;
-		ctx.drawImage(rndrimg, 0, 0);
-		draw();
+		//const lyr = findLayerByName('render');
+		//const ctx = lyr.ctx;
+		//ctx.drawImage(rndrimg, -lyr.x, -lyr.y);
+		//draw();
+		addRenderLayer(rndrimg);
 	}
 }
 
@@ -220,13 +222,58 @@ modelCanvas.width = renderBoxWidth;
 modelCanvas.height = renderBoxHeight;
 var modelCtx = modelCanvas.getContext('2d', {willReadFrequently: true});
 
+function test_fn() {
+    modelCtx.globalCompositeOperation = "source-over"
+	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
+	for (let lyr of layers) {
+		if (lyr.name === 'mask')
+			continue;
+		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
+	}
+	
+	const idata = modelCtx.getImageData(0, 0, modelCanvas.width, modelCanvas.height);
+	const data = idata.data;
+	const pixelBuffer = new Uint32Array(data.buffer);
+	if (pixelBuffer.every(color => color === 0)) // if all pixels are transparent
+		console.log('all');
+	else if (pixelBuffer.some(color => color === 0)) {
+		console.log('some');
+		// create a mask
+		for(let i=0; i<data.length; i+=4) {
+			if (data[i+3]<0.5) // transparent to white
+				data[i] = data[i+1] = data[i+2] = 255;
+			else // opaque to black
+				data[i] = data[i+1] = data[i+2] = 0;
+			data[i+3] = 255;
+		}
+		
+		var formData = new FormData();
+		formData.append('width', idata.width);
+		formData.append('height', idata.height);
+		formData.append('mask', data);
+
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", 'test', true);
+		xhr.onload = function () {
+		  if (xhr.status === 200) {
+			console.log('Success');
+		  } else {
+			console.error('Error:', xhr);
+		  }
+		};
+		xhr.send(formData);
+	}
+	else
+		console.log('none');
+}
+
 function generateModelImage() {
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
 	for (let lyr of layers) {
 		if (lyr.name === 'mask')
 			continue;
-		modelCtx.drawImage(lyr.canvas, 0, 0);
+		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
 	}
 	
 	const pixelBuffer = new Uint32Array(modelCtx.getImageData(0, 0, modelCanvas.width, modelCanvas.height).data.buffer);
@@ -242,18 +289,7 @@ function generateMaskImage() {
 	const pixelBuffer = new Uint32Array(masklyr.ctx.getImageData(0, 0, masklyr.canvas.width, masklyr.canvas.height).data.buffer);
 	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
 		return 0;
-	/*
-    modelCtx.globalCompositeOperation = "source-over"
-	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
-	modelCtx.drawImage(masklyr.canvas, 0, 0);
-    modelCtx.globalCompositeOperation = "source-in"
-	modelCtx.beginPath();
-	modelCtx.fillStyle = '#FFF';
-	modelCtx.rect(0, 0, modelCanvas.width, modelCanvas.height);
-	modelCtx.fill();
-	
-	var dataURL = modelCanvas.toDataURL();
-	*/
+		
 	var dataURL = maskCanvas.toDataURL();
 	return dataURL;
 }
@@ -582,6 +618,17 @@ function addLayer(canvas, name, position=-1) {
 		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
 	}
 	layerCtrl.selectedIndex = 0;
+}
+
+function addRenderLayer(img) {
+	var cvs = new OffscreenCanvas(img.width, img.height);
+	var ctx = cvs.getContext('2d');
+	ctx.drawImage(img, 0, 0);
+	var name = 'render'+layers.length;
+	addLayer(cvs, name, layers.length-2);
+	selectLayer(name);
+	setCurrentTool("move");
+	draw();
 }
 
 // Add event listener for dropped files

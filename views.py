@@ -17,6 +17,17 @@ def index():
   return render_template('index.html', model_id=sd_get_model_id(), model_ids=sd_get_cached_models_list(), cache_busting_param=cache_busting_param)
 
 
+@views.route('/test', methods=['POST'])
+def testfn():
+  w = int(request.form.get('width'))
+  h = int(request.form.get('height'))
+  mask_data = request.form.get('mask').split(',')
+  a = np.asarray(mask_data).astype('byte').reshape(-1)
+  image = Image.frombuffer('RGBA', (w, h), a)
+  image.save('out_mask.png')
+  
+  return 'Success!'
+    
 @views.route('/txt2img', methods=['POST'])
 def txt2img():
   prompt = request.form.get('prompt')

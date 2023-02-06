@@ -3,19 +3,19 @@
 var cacheBustingParam = Date.now();
 
 function generate() {
-  const prompt_ = document.getElementById('prompt').value;
-  const negative = document.getElementById('negative').value;
-  const numSteps = document.getElementById('steps-slider').value;
-  const guidance = document.getElementById('guidance-slider').value;
+	const prompt_ = document.getElementById('prompt').value;
+	const negative = document.getElementById('negative').value;
+	const numSteps = document.getElementById('steps-slider').value;
+	const guidance = document.getElementById('guidance-slider').value;
 
-  var formData = new FormData();
-  
-  formData.append('prompt', prompt_);
-  formData.append('negative', negative);
-  formData.append('numSteps', numSteps);
-  formData.append('guidance', guidance);
-  
-  var mode = 'txt2img';
+	var formData = new FormData();
+
+	formData.append('prompt', prompt_);
+	formData.append('negative', negative);
+	formData.append('numSteps', numSteps);
+	formData.append('guidance', guidance);
+
+	var mode = 'txt2img';
     var img = generateModelImage();
 	if (img!=0){
 		mode = 'img2img';

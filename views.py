@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template, Response, jsonify
 from stable_diffusion import sd_generate, sd_get_model_id, sd_change_model, sd_get_cached_models_list
 import time, base64
-from PIL import Image
+from PIL import Image, ImageFilter
 from io import BytesIO
 import numpy as np
 
@@ -77,6 +77,7 @@ def inpainting():
   npimg[np.logical_not(trans_mask)] = [0,0,0,0]
   pastemask = Image.fromarray(npimg)
   
+  mask = mask.filter(ImageFilter.BoxBlur(2))
   mask = mask.convert("RGB")
   outimg = sd_generate(image=img, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise)
   outimg = outimg[0]

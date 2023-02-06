@@ -16,11 +16,12 @@ function generate() {
 	formData.append('guidance', guidance);
 
 	var mode = 'txt2img';
-    var img = generateModelImage();
-	if (img!=0){
+    var cimg = generateModelImage();
+	if (cimg[0]==='ALLOPAQUE'){
+		var img = cimg[1];
 		mode = 'img2img';
 		formData.append('image', img);
-		
+	
 		var mask = generateMaskImage();
 		if (mask!=0) {
 			mode = 'inpainting';
@@ -29,6 +30,14 @@ function generate() {
 		
 		const noise = document.getElementById('noise-slider').value;
 		formData.append('noise', noise);
+	} else if (cimg[0]==='SOMETRANS') {
+		mode = 'inpainting';
+		var img = cimg[1];
+		var mask = cimg[2];
+		
+		formData.append('image', img);
+		formData.append('mask', mask);
+		formData.append('noise', '100');
 	}
 
     var xhr = new XMLHttpRequest();

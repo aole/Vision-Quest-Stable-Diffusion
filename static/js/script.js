@@ -276,12 +276,36 @@ function generateModelImage() {
 		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
 	}
 	
-	const pixelBuffer = new Uint32Array(modelCtx.getImageData(0, 0, modelCanvas.width, modelCanvas.height).data.buffer);
-	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
-		return 0;
+	const idata = modelCtx.getImageData(0, 0, modelCanvas.width, modelCanvas.height);
+	const data = idata.data;
+	const pixelBuffer = new Uint32Array(data.buffer);
+	var mode = 'NA';
+	if (pixelBuffer.every(color => color === 0)) { // if all pixels are transparent
+		mode = 'ALLTRANS';
+		return [mode, 0, 0];
+	}
+	else if (pixelBuffer.some(color => color === 0)) {
+		mode = 'SOMETRANS';
+		var dataURL = modelCanvas.toDataURL();
+		// create a mask
+		for(let i=0; i<data.length; i+=4) {
+			if (data[i+3]<0.5) { // transparent to white
+				data[i] = data[i+1] = data[i+2] = 255;
+				data[i+3] = 1;
+			}
+			else { // opaque to transparent
+				data[i] = data[i+1] = data[i+2] = 0;
+				data[i+3] = 0;
+			}
+		}
+		modelCtx.putImageData(idata, 0, 0);
+		var maskURL = modelCanvas.toDataURL();
+		return [mode, dataURL, maskURL];
+	}
+	else mode = 'ALLOPAQUE';
 	
 	var dataURL = modelCanvas.toDataURL();
-	return dataURL;
+	return [mode, dataURL, 0]
 }
 
 function generateMaskImage() {

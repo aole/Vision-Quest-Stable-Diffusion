@@ -9,7 +9,7 @@ from diffusers import DiffusionPipeline, DDIMScheduler
 from PIL import Image
 from accelerate import cpu_offload
 
-def prepare_mask_and_masked_image(image, mask, width, height):
+def prepare_mask_and_masked_image(image, mask, width, height, scale_factor):
     w, h = width, height
     # preprocess image
     if isinstance(image, (Image.Image, np.ndarray)):
@@ -29,7 +29,8 @@ def prepare_mask_and_masked_image(image, mask, width, height):
             mask = [mask]
 
         if isinstance(mask, list) and isinstance(mask[0], Image.Image):
-            mask = [i.resize((w, h), resample=Image.Resampling.LANCZOS) for i in mask]
+            # move scale here due to a weird issue while scalling with torch interpolate
+            mask = [i.resize((w//scale_factor, h//scale_factor), resample=Image.Resampling.LANCZOS) for i in mask]
             mask = np.concatenate([np.array(m.convert("L"))[None, None, :] for m in mask], axis=0)
             mask = mask.astype(np.float32) / 255.0
             
@@ -160,7 +161,7 @@ class BasePipeline(DiffusionPipeline):
         
         # if image 2 image
         if image:
-            image, mask = prepare_mask_and_masked_image(image, mask, width, height)
+            image, mask = prepare_mask_and_masked_image(image, mask, width, height, self.vae_scale_factor)
         else:
             strength = 1.0
         
@@ -178,6 +179,16 @@ class BasePipeline(DiffusionPipeline):
         # noise = torch.randn(shape, generator=generator, device=self.device, dtype=dtype)
         noise = torch.randn(shape, device=self.device, dtype=dtype)
 
+        if mask is not None:
+            #print(mask.shape)
+            #mask = torch.nn.functional.interpolate(
+            #    mask, size=(height//self.vae_scale_factor, width//self.vae_scale_factor)
+            #)
+            #print(mask.shape, flush=True)
+            mask = mask.to(device=self.device, dtype=dtype)
+            if mask.shape[0] < batch_size:
+                mask = mask.repeat(batch_size // mask.shape[0], 1, 1, 1)
+            
         if image is not None:
             image = image.to(device=self.device, dtype=dtype)
             img_latents = self.vae.encode(image).latent_dist.sample()
@@ -185,22 +196,17 @@ class BasePipeline(DiffusionPipeline):
             img_latents = torch.cat([img_latents], dim=0)
             
             latents_orig = img_latents
+            
+            if strength==1:
+                img_latents = img_latents*(1-mask) + noise*(mask)*strength
+                self.save_latents('init', img_latents)
+                
             latents = self.scheduler.add_noise(img_latents, noise, latent_timestep)
         else:
             latents = noise
         
-        if mask is not None:
-            mask = torch.nn.functional.interpolate(
-                mask, size=(height//self.vae_scale_factor, width//self.vae_scale_factor)
-                
-            )
-            mask = mask.to(device=self.device, dtype=dtype)
-            if mask.shape[0] < batch_size:
-                mask = mask.repeat(batch_size // mask.shape[0], 1, 1, 1)
-            
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
-                # self.save_latents(i, latents)
                 latent_model_input = torch.cat([latents] * 2)
                 
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
@@ -223,8 +229,8 @@ class BasePipeline(DiffusionPipeline):
                     
                 progress_bar.update()
 
-        if mask is not None:
-            latents = (latents_orig * (1-mask)) + (latents * (mask))
+        # if mask is not None:
+        #     latents = (latents_orig * (1-mask)) + (latents * (mask))
             
         return self.latents_to_images(latents)
         

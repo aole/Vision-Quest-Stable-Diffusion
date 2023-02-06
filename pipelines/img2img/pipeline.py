@@ -3,14 +3,6 @@ import numpy as np
 from diffusers import DiffusionPipeline
 from PIL import Image
 
-PIL_INTERPOLATION = {
-    "linear": Image.Resampling.BILINEAR,
-    "bilinear": Image.Resampling.BILINEAR,
-    "bicubic": Image.Resampling.BICUBIC,
-    "lanczos": Image.Resampling.LANCZOS,
-    "nearest": Image.Resampling.NEAREST,
-}
-
 def preprocess(image):
     if isinstance(image, torch.Tensor):
         return image
@@ -21,7 +13,7 @@ def preprocess(image):
         w, h = image[0].size
         w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
 
-        image = [np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))[None, :] for i in image]
+        image = [np.array(i.resize((w, h), resample=Image.Resampling.LANCZOS))[None, :] for i in image]
         image = np.concatenate(image, axis=0)
         image = np.array(image).astype(np.float32) / 255.0
         image = image.transpose(0, 3, 1, 2)
@@ -45,28 +37,9 @@ class Img2ImgPipeline(DiffusionPipeline):
         )
         self.vae_scale_factor = 2 ** (len(self.vae.config.block_out_channels) - 1)
 
-    @property
-    def _execution_device(self):
-        r"""
-        Returns the device on which the pipeline's models will be executed. After calling
-        `pipeline.enable_sequential_cpu_offload()` the execution device can only be inferred from Accelerate's module
-        hooks.
-        """
-        if self.device != torch.device("meta") or not hasattr(self.unet, "_hf_hook"):
-            return self.device
-        for module in self.unet.modules():
-            if (
-                hasattr(module, "_hf_hook")
-                and hasattr(module._hf_hook, "execution_device")
-                and module._hf_hook.execution_device is not None
-            ):
-                return torch.device(module._hf_hook.execution_device)
-        return self.device
-
     def _encode_prompt(
         self,
         prompt,
-        device,
         negative_prompt=None,
     ):
         batch_size = 1
@@ -83,7 +56,7 @@ class Img2ImgPipeline(DiffusionPipeline):
         text_input_ids = text_inputs.input_ids
         
         prompt_embeds = self.text_encoder(
-            text_input_ids.to(device),
+            text_input_ids.to(self.device),
             attention_mask=None,
         )
         prompt_embeds = prompt_embeds[0]
@@ -106,7 +79,7 @@ class Img2ImgPipeline(DiffusionPipeline):
         )
 
         negative_prompt_embeds = self.text_encoder(
-            uncond_input.input_ids.to(device),
+            uncond_input.input_ids.to(self.device),
             attention_mask=None,
         )
         negative_prompt_embeds = negative_prompt_embeds[0]
@@ -171,22 +144,20 @@ class Img2ImgPipeline(DiffusionPipeline):
         negative_prompt = None,
     ):
         batch_size = 1
-        device = self._execution_device
         
         prompt_embeds = self._encode_prompt(
             prompt,
-            device,
             negative_prompt,
         )
 
         image = preprocess(image)
 
-        self.scheduler.set_timesteps(num_inference_steps, device=device)
-        timesteps, num_inference_steps = self.get_timesteps(num_inference_steps, strength, device)
+        self.scheduler.set_timesteps(num_inference_steps, device=self.device)
+        timesteps, num_inference_steps = self.get_timesteps(num_inference_steps, strength, self.device)
         latent_timestep = timesteps[:1].repeat(batch_size)
 
         latents = self.prepare_latents(
-            image, latent_timestep, batch_size, device
+            image, latent_timestep, batch_size, self.device
         )
 
         # 8. Denoising loop

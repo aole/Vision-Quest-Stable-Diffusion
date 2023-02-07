@@ -198,7 +198,7 @@ function refreshLayerControl() {
 		var lyr = layers[i];
         var caption = lyr.name;
         var l = max_len-caption.length;
-        caption += '_'.repeat(l) + (lyr.visible?'@':' ');
+        caption += '_'.repeat(l) + (lyr.visible?'@':'_');
 		layerCtrl.options[layerCtrl.options.length] = new Option(caption, lyr.name);
         if (lyr.name === currentLayer.name)
             selectidx = li;

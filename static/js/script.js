@@ -192,10 +192,14 @@ function selectLayerByIndex(idx) {
 function refreshLayerControl() {
     selectidx = 0;
     var li = 0;
+    const max_len = 30;
 	layerCtrl.options.length = 0;
 	for (let i=layers.length-1; i>=0; i--) {
 		var lyr = layers[i];
-		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
+        var caption = lyr.name;
+        var l = max_len-caption.length;
+        caption += '_'.repeat(l) + (lyr.visible?'@':' ');
+		layerCtrl.options[layerCtrl.options.length] = new Option(caption, lyr.name);
         if (lyr.name === currentLayer.name)
             selectidx = li;
         li++;
@@ -205,7 +209,7 @@ function refreshLayerControl() {
 
 function addLayer(canvas, name, position=-1) {
     var ctx = canvas.getContext('2d');
-    var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0}
+    var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0, visible: true}
     if (position===-1)
         layers.push(lyr);
     else
@@ -276,7 +280,7 @@ function deleteLayer() {
     draw();
 }
 
-function clearImage() {
+function clearLayer() {
 	currentCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 	var idx = layerCtrl.selectedIndex;
 	var lidx = layers.length-idx-1;
@@ -305,6 +309,12 @@ function moveLayerDown() {
 	draw();
 }
 
+function toggleVisible() {
+    currentLayer.visible = !currentLayer.visible;
+    refreshLayerControl();
+    draw();
+}
+
 function updateRenderImage(url) {
 	// Create a new image object and set its src property
 	var rndrimg = new Image();
@@ -331,9 +341,6 @@ var modelCanvas = document.createElement('canvas');
 modelCanvas.width = renderBoxWidth;
 modelCanvas.height = renderBoxHeight;
 var modelCtx = modelCanvas.getContext('2d', {willReadFrequently: true});
-
-function test_fn() {
-}
 
 function generateModelImage() {
     modelCtx.globalCompositeOperation = "source-over"
@@ -425,6 +432,7 @@ function draw() {
 	
 	// Draw layers onto canvas
 	for (let lyr of layers) {
+        if (!lyr.visible) continue;
 		if (lyr.name === 'mask') {
 			if (autoMaskEnabled) continue;
 			viewportCtx.globalAlpha = 0.5;
@@ -520,6 +528,8 @@ viewport.addEventListener("mousedown", function(e) {
 	
     var pansX = parseInt(panX/scale);
     var pansY = parseInt(panY/scale);
+    
+    if (!currentLayer.visible) return;
     
     // Check if left mouse button was pressed
     if ((e.button === 0 && spacebarDown)||e.button===1) {

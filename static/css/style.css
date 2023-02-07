@@ -90,6 +90,7 @@ html, body {
 #layers-list {
 	background-color: transparent;
 	color: white;
+    font-family: monospace;
 }
 
 .container-text-button {

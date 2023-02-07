@@ -191,12 +191,14 @@ function selectLayerByIndex(idx) {
 
 function refreshLayerControl(layerName='') {
     selectidx = 0;
+    var li = 0;
 	layerCtrl.options.length = 0;
 	for (let i=layers.length-1; i>=0; i--) {
 		var lyr = layers[i];
 		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
         if (lyr.name === layerName)
-            selectidx = i;
+            selectidx = li;
+        li++;
 	}
 	layerCtrl.selectedIndex = selectidx;
 }
@@ -210,6 +212,8 @@ function addLayer(canvas, name, position=-1) {
         layers.splice(position, 0, lyr);
 	
     refreshLayerControl();
+    
+    return lyr;
 }
 
 function addRenderLayer(img) {
@@ -223,6 +227,42 @@ function addRenderLayer(img) {
 	draw();
 }
 
+function combineLayers() {
+    var l = 100000;
+    var t = 100000;
+    var r = -100000;
+    var b = -100000;
+    for(let lyr of layers) {
+        if(lyr.name==='brush' || lyr.name==='mask') continue;
+        l = lyr.x < l ? lyr.x : l;
+        t = lyr.y < t ? lyr.y : t;
+        r = lyr.x + lyr.canvas.width > r ? lyr.x + lyr.canvas.width : r;
+        b = lyr.y + lyr.canvas.height > b ? lyr.y + lyr.canvas.height : b;
+    }
+    var w = r-l;
+    var h = b-t;
+    
+    if (w<=0 || h<=0) return;
+    console.log(l, t, r, b, w, h);
+    
+	var cvs = new OffscreenCanvas(w, h);
+	var ctx = cvs.getContext('2d');
+    for(let lyr of layers) {
+        if(lyr.name==='brush' || lyr.name==='mask') continue;
+        ctx.drawImage(lyr.canvas, lyr.x-l, lyr.y-t);
+    }
+    layers.splice(0, layers.length-2);
+    
+	var name = 'image'+layers.length;
+	lyr = addLayer(cvs, name, layers.length-2);
+    lyr.x = l;
+    lyr.y = t;
+    
+	selectLayer(name);
+	setCurrentTool("move");
+	draw();
+}
+
 function deleteLayer() {
     if (currentLayer.name === 'brush' ||
         currentLayer.name === 'mask') {
@@ -231,7 +271,7 @@ function deleteLayer() {
     }
     var idx = layers.findIndex((e) => e === currentLayer);
     layers.splice(idx, 1);
-    selectLayerByIndex(idx);
+    selectLayerByIndex(Math.max(idx-1,0));
     refreshLayerControl(currentLayer.name);
     draw();
 }
@@ -241,10 +281,8 @@ function clearImage() {
 	var idx = layerCtrl.selectedIndex;
 	var lidx = layers.length-idx-1;
 	var lyr = layers[lidx];
-	if (!(lyr.name=='mask' || lyr.name==='brush' || lyr.name==='render')) {
-		layerCtrl.remove(idx);
-		layers.splice(lidx, 1);
-		selectLayer('brush');
+	if (!(lyr.name=='mask' || lyr.name==='brush')) {
+        deleteLayer()
 	}
 	draw();
 }
@@ -277,48 +315,6 @@ modelCanvas.height = renderBoxHeight;
 var modelCtx = modelCanvas.getContext('2d', {willReadFrequently: true});
 
 function test_fn() {
-    modelCtx.globalCompositeOperation = "source-over"
-	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
-	for (let lyr of layers) {
-		if (lyr.name === 'mask')
-			continue;
-		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
-	}
-	
-	const idata = modelCtx.getImageData(0, 0, modelCanvas.width, modelCanvas.height);
-	const data = idata.data;
-	const pixelBuffer = new Uint32Array(data.buffer);
-	if (pixelBuffer.every(color => color === 0)) // if all pixels are transparent
-		console.log('all');
-	else if (pixelBuffer.some(color => color === 0)) {
-		console.log('some');
-		// create a mask
-		for(let i=0; i<data.length; i+=4) {
-			if (data[i+3]<0.5) // transparent to white
-				data[i] = data[i+1] = data[i+2] = 255;
-			else // opaque to black
-				data[i] = data[i+1] = data[i+2] = 0;
-			data[i+3] = 255;
-		}
-		
-		var formData = new FormData();
-		formData.append('width', idata.width);
-		formData.append('height', idata.height);
-		formData.append('mask', data);
-
-		var xhr = new XMLHttpRequest();
-		xhr.open("POST", 'test', true);
-		xhr.onload = function () {
-		  if (xhr.status === 200) {
-			console.log('Success');
-		  } else {
-			console.error('Error:', xhr);
-		  }
-		};
-		xhr.send(formData);
-	}
-	else
-		console.log('none');
 }
 
 function generateModelImage() {

@@ -180,9 +180,60 @@ function findLayerIndexByName(name) {
 function selectLayer(name) {
     var idx = findLayerIndexByName(name);
     layerCtrl.selectedIndex = layers.length-1-idx;
+    selectLayerByIndex(idx);
+}
+
+function selectLayerByIndex(idx) {
 	currentLayer = layers[idx];
     currentCanvas = layers[idx].canvas;
     currentCtx = layers[idx].ctx;
+}
+
+function refreshLayerControl(layerName='') {
+    selectidx = 0;
+	layerCtrl.options.length = 0;
+	for (let i=layers.length-1; i>=0; i--) {
+		var lyr = layers[i];
+		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
+        if (lyr.name === layerName)
+            selectidx = i;
+	}
+	layerCtrl.selectedIndex = selectidx;
+}
+
+function addLayer(canvas, name, position=-1) {
+    var ctx = canvas.getContext('2d');
+    var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0}
+    if (position===-1)
+        layers.push(lyr);
+    else
+        layers.splice(position, 0, lyr);
+	
+    refreshLayerControl();
+}
+
+function addRenderLayer(img) {
+	var cvs = new OffscreenCanvas(img.width, img.height);
+	var ctx = cvs.getContext('2d');
+	ctx.drawImage(img, 0, 0);
+	var name = 'render'+layers.length;
+	addLayer(cvs, name, layers.length-2);
+	selectLayer(name);
+	setCurrentTool("move");
+	draw();
+}
+
+function deleteLayer() {
+    if (currentLayer.name === 'brush' ||
+        currentLayer.name === 'mask') {
+        console.log('Brush or Mask layer cannot be deleted');
+        return;
+    }
+    var idx = layers.findIndex((e) => e === currentLayer);
+    layers.splice(idx, 1);
+    selectLayerByIndex(idx);
+    refreshLayerControl(currentLayer.name);
+    draw();
 }
 
 function clearImage() {
@@ -653,33 +704,6 @@ layerCtrl.addEventListener("change", function(e) {
     selectLayer(e.target.value);
     draw();
 });
-
-function addLayer(canvas, name, position=-1) {
-    var ctx = canvas.getContext('2d');
-    var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0}
-    if (position===-1)
-        layers.push(lyr);
-    else
-        layers.splice(position, 0, lyr);
-	
-	layerCtrl.options.length = 0;
-	for (let i=layers.length-1; i>=0; i--) {
-		var lyr = layers[i];
-		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
-	}
-	layerCtrl.selectedIndex = 0;
-}
-
-function addRenderLayer(img) {
-	var cvs = new OffscreenCanvas(img.width, img.height);
-	var ctx = cvs.getContext('2d');
-	ctx.drawImage(img, 0, 0);
-	var name = 'render'+layers.length;
-	addLayer(cvs, name, layers.length-2);
-	selectLayer(name);
-	setCurrentTool("move");
-	draw();
-}
 
 // Add event listener for dropped files
 viewport.ondrop = function(e) {

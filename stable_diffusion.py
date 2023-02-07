@@ -26,12 +26,18 @@ def sd_get_cached_models_list():
 
 def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7.5, noise=.8, batch_size=1):
     print(f'generate ({model_id}) {prompt}')
-    pipe = BasePipeline.from_pretrained(
-        'runwayml/stable-diffusion-v1-5',
-        torch_dtype=torch.float16,
-        revision="fp16",
-    )
-    pipe.enable_xformers_memory_efficient_attention()
+    
+    if device == 'cpu':
+        pipe = BasePipeline.from_pretrained(
+            'runwayml/stable-diffusion-v1-5',
+        )
+    else:
+        pipe = BasePipeline.from_pretrained(
+            'runwayml/stable-diffusion-v1-5',
+            torch_dtype=torch.float16,
+            revision="fp16",
+        )
+        pipe.enable_xformers_memory_efficient_attention()
 
     pipe = pipe.to(device)
     

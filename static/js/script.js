@@ -189,14 +189,14 @@ function selectLayerByIndex(idx) {
     currentCtx = layers[idx].ctx;
 }
 
-function refreshLayerControl(layerName='') {
+function refreshLayerControl() {
     selectidx = 0;
     var li = 0;
 	layerCtrl.options.length = 0;
 	for (let i=layers.length-1; i>=0; i--) {
 		var lyr = layers[i];
 		layerCtrl.options[layerCtrl.options.length] = new Option(lyr.name, lyr.name);
-        if (lyr.name === layerName)
+        if (lyr.name === currentLayer.name)
             selectidx = li;
         li++;
 	}
@@ -211,6 +211,7 @@ function addLayer(canvas, name, position=-1) {
     else
         layers.splice(position, 0, lyr);
 	
+	selectLayer(name);
     refreshLayerControl();
     
     return lyr;
@@ -222,7 +223,6 @@ function addRenderLayer(img) {
 	ctx.drawImage(img, 0, 0);
 	var name = 'render'+layers.length;
 	addLayer(cvs, name, layers.length-2);
-	selectLayer(name);
 	setCurrentTool("move");
 	draw();
 }
@@ -272,7 +272,7 @@ function deleteLayer() {
     var idx = layers.findIndex((e) => e === currentLayer);
     layers.splice(idx, 1);
     selectLayerByIndex(Math.max(idx-1,0));
-    refreshLayerControl(currentLayer.name);
+    refreshLayerControl();
     draw();
 }
 
@@ -284,6 +284,24 @@ function clearImage() {
 	if (!(lyr.name=='mask' || lyr.name==='brush')) {
         deleteLayer()
 	}
+	draw();
+}
+
+function moveLayerUp() {
+    if(layers.length<4) return; // only one movable layer
+    var idx = findLayerIndexByName(currentLayer.name);
+    if (idx >= layers.length-3) return; // cannot move further up
+    [layers[idx], layers[idx+1]] = [layers[idx+1], layers[idx]];
+    refreshLayerControl();
+	draw();
+}
+
+function moveLayerDown() {
+    if(layers.length<4) return; // only one movable layer
+    var idx = findLayerIndexByName(currentLayer.name);
+    if (idx === 0) return; // cannot move further down
+    [layers[idx], layers[idx-1]] = [layers[idx-1], layers[idx]];
+    refreshLayerControl();
 	draw();
 }
 

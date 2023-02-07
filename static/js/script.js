@@ -8,6 +8,8 @@ var tempRBy = 0;
 var renderBoxWidth = 512;
 var renderBoxHeight = 512;
 
+var gridSize = 64;
+
 let scale = 1.0;
 let handleRadius = 10;
 let handleRadius2 = handleRadius*handleRadius;
@@ -415,7 +417,7 @@ function draw() {
     var pansY = parseInt(panY/scale);
     
 	// Draw vertical lines
-	for (var x = pansX%128; x < viewport.width/scale; x += 128) {
+	for (var x = pansX%gridSize; x < viewport.width/scale; x += gridSize) {
         viewportCtx.beginPath();
         viewportCtx.moveTo(x, 0);
         viewportCtx.lineTo(x, viewport.height/scale);
@@ -423,7 +425,7 @@ function draw() {
 	}
 
 	// Draw horizontal lines
-	for (var y = pansY%128; y < viewport.height/scale; y += 128) {
+	for (var y = pansY%gridSize; y < viewport.height/scale; y += gridSize) {
         viewportCtx.beginPath();
         viewportCtx.moveTo(0, y);
         viewportCtx.lineTo(viewport.width/scale, y);
@@ -471,9 +473,14 @@ function draw() {
     for (var i=0; i<2; i++) { // alternating black and white dashes
 		var bx = pansX;
 		var by = pansY;
+        var trbx = tempRBx/scale;
+        var trby = tempRBy/scale
 		if (boxing) {
-			bx += tempRBx;
-			by += tempRBy;
+            var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
+            var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
+            
+			bx += parseInt(dx);
+			by += parseInt(dy);
 		}
         viewportCtx.beginPath();
         viewportCtx.moveTo(bx, by);
@@ -657,8 +664,8 @@ viewport.addEventListener("mousemove", function(e) {
 		// move the render box
 		var dx = x - prevX;
 		var dy = y - prevY;
-		tempRBx += dx/scale;
-		tempRBy += dy/scale;
+		tempRBx += dx;
+		tempRBy += dy;
 	} else if (moving) {
         // move the current layer
 		var dx = x - prevX;
@@ -711,12 +718,19 @@ viewport.addEventListener("mouseup", function(e) {
 			var lyr = findLayerByName('mask');
 			lyr.ctx.fill(maskPath);
 		} else if (boxing) {
-			panX += tempRBx;
-			panY += tempRBy;
+            var trbx = tempRBx/scale;
+            var trby = tempRBy/scale
+            
+            var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
+            var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
+            
+			panX += dx*scale;
+			panY += dy*scale;
+            
 			for(let lyr of layers) {
 				if (lyr.name=='mask' || lyr.name==='brush') continue;
-				lyr.x -= tempRBx;
-				lyr.y -= tempRBy;
+				lyr.x -= dx;
+				lyr.y -= dy;
 			}
 			tempRBx = tempRBy = 0;
 		}

@@ -3,6 +3,8 @@ var cacheBustingParam = Date.now();
 
 var spacebarDown = false;
 
+var tempRBx = 0;
+var tempRBy = 0;
 var renderBoxWidth = 512;
 var renderBoxHeight = 512;
 
@@ -74,6 +76,7 @@ var drawing = false;
 var masking = false;
 var erasing = false;
 var moving = false;
+var boxing = false;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -389,16 +392,22 @@ function draw() {
     pointerWidth *= scale / 2.0;
     
     for (var i=0; i<2; i++) { // alternating black and white dashes
+		var bx = pansX;
+		var by = pansY;
+		if (boxing) {
+			bx += tempRBx;
+			by += tempRBy;
+		}
         viewportCtx.beginPath();
-        viewportCtx.moveTo(pansX, pansY);
-        viewportCtx.lineTo(pansX+w, pansY);
-        viewportCtx.lineTo(pansX+w, pansY+h);
-        viewportCtx.lineTo(pansX, pansY+h);
+        viewportCtx.moveTo(bx, by);
+        viewportCtx.lineTo(bx+w, by);
+        viewportCtx.lineTo(bx+w, by+h);
+        viewportCtx.lineTo(bx, by+h);
         viewportCtx.closePath();
         viewportCtx.stroke();
         
         // handles
-        if (lyr.name != 'mask' && lyr.name != 'brush') {
+        if (lyr.name != 'mask' && lyr.name != 'brush' && !boxing) {
             if (handleMouse==1) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
             viewportCtx.beginPath()
             viewportCtx.arc(pansX+w/2, pansY, handleRadius/scale, 0, 2 * Math.PI);
@@ -435,7 +444,7 @@ function draw() {
 
 // Set up mousedown event listener
 viewport.addEventListener("mousedown", function(e) {
-	panning = drawing = erasing = masking = moving = false;
+	panning = drawing = erasing = masking = moving = boxing = false;
 
     prevX = e.offsetX;
     prevY = e.offsetY;
@@ -476,6 +485,8 @@ viewport.addEventListener("mousedown", function(e) {
 		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
 		draw();
+	} else if (pickMouse > 0 && currentTool === 'move') {
+		boxing = true;
 	} else if (e.button === 0 && currentTool === 'move' && (currentLayer.name != 'brush' && currentLayer.name != 'mask')) {
         moving = true;
 		draw();
@@ -563,6 +574,12 @@ viewport.addEventListener("mousemove", function(e) {
 			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 			currentCtx.fill();
 		}
+	} else if (boxing) {
+		// move the render box
+		var dx = x - prevX;
+		var dy = y - prevY;
+		tempRBx += dx/scale;
+		tempRBy += dy/scale;
 	} else if (moving) {
         // move the current layer
 		var dx = x - prevX;
@@ -581,16 +598,16 @@ viewport.addEventListener("mousemove", function(e) {
         
         handleMouse = 0;
         if (distance2(mx, my, w/2, 0)<handleRadius2) handleMouse = 1;
-        if (distance2(mx, my, w, h/2)<handleRadius2) handleMouse = 2;
-        if (distance2(mx, my, w/2, h)<handleRadius2) handleMouse = 3;
-        if (distance2(mx, my, 0, h/2)<handleRadius2) handleMouse = 4;
+        else if (distance2(mx, my, w, h/2)<handleRadius2) handleMouse = 2;
+        else if (distance2(mx, my, w/2, h)<handleRadius2) handleMouse = 3;
+        else if (distance2(mx, my, 0, h/2)<handleRadius2) handleMouse = 4;
         
         pickMouse = 0;
         if (handleMouse===0){
             if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my)<=pickRadius) pickMouse = 1;
-            if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx)<=pickRadius) pickMouse = 2;
-            if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my-h)<=pickRadius) pickMouse = 3;
-            if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx-w)<=pickRadius) pickMouse = 4;
+            else if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx)<=pickRadius) pickMouse = 2;
+            else if(mx>=-pickRadius && mx<w+pickRadius && Math.abs(my-h)<=pickRadius) pickMouse = 3;
+            else if(my>=-pickRadius && my<h+pickRadius && Math.abs(mx-w)<=pickRadius) pickMouse = 4;
         }
     }
     
@@ -616,10 +633,19 @@ viewport.addEventListener("mouseup", function(e) {
 		if (drawing && autoMaskEnabled) {
 			var lyr = findLayerByName('mask');
 			lyr.ctx.fill(maskPath);
+		} else if (boxing) {
+			panX += tempRBx;
+			panY += tempRBy;
+			for(let lyr of layers) {
+				if (lyr.name=='mask' || lyr.name==='brush') continue;
+				lyr.x -= tempRBx;
+				lyr.y -= tempRBy;
+			}
+			tempRBx = tempRBy = 0;
 		}
     }
     // Reset flags
-    panning = drawing = erasing = masking = moving = false;
+    panning = drawing = erasing = masking = moving = boxing = false;
     draw();
 });
 

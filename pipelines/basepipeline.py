@@ -199,7 +199,6 @@ class BasePipeline(DiffusionPipeline):
             
             if strength==1:
                 img_latents = img_latents*(1-mask) + noise*(mask)*strength
-                self.save_latents('init', img_latents)
                 
             latents = self.scheduler.add_noise(img_latents, noise, latent_timestep)
         else:

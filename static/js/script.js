@@ -2,6 +2,7 @@
 var cacheBustingParam = Date.now();
 
 var spacebarDown = false;
+var ctrlDown = false;
 
 var tempRBx = 0;
 var tempRBy = 0;
@@ -181,11 +182,11 @@ function findLayerIndexByName(name) {
 
 function selectLayer(name) {
     var idx = findLayerIndexByName(name);
-    layerCtrl.selectedIndex = layers.length-1-idx;
     selectLayerByIndex(idx);
 }
 
 function selectLayerByIndex(idx) {
+    layerCtrl.selectedIndex = layers.length-1-idx;
 	currentLayer = layers[idx];
     currentCanvas = layers[idx].canvas;
     currentCtx = layers[idx].ctx;
@@ -315,6 +316,17 @@ function toggleVisible() {
     currentLayer.visible = !currentLayer.visible;
     refreshLayerControl();
     draw();
+}
+
+function getLayerAtLocation(x, y) {
+    x = (x-panX) / scale;
+    y = (y-panY) / scale;
+    for(var i=layers.length-3; i>=0; i--) {
+        var lyr = layers[i];
+        if (x>=lyr.x && y>=lyr.y && x<=lyr.x+lyr.canvas.width && y<=lyr.y+lyr.canvas.height)
+            return lyr;
+    }
+    return null;
 }
 
 function updateRenderImage(url) {
@@ -470,59 +482,63 @@ function draw() {
         pointerWidth = document.getElementById('mask-slider').value;
     pointerWidth *= scale / 2.0;
     
-    for (var i=0; i<2; i++) { // alternating black and white dashes
-		var bx = pansX;
-		var by = pansY;
-        var trbx = tempRBx/scale;
-        var trby = tempRBy/scale
-		if (boxing) {
-            var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
-            var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
+    if (!spacebarDown && !ctrlDown) {
+        for (var i=0; i<2; i++) {
+            var bx = pansX;
+            var by = pansY;
+            var trbx = tempRBx/scale;
+            var trby = tempRBy/scale
+            if (boxing) {
+                var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
+                var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
+                
+                bx += parseInt(dx);
+                by += parseInt(dy);
+            }
             
-			bx += parseInt(dx);
-			by += parseInt(dy);
-		}
-        viewportCtx.beginPath();
-        viewportCtx.moveTo(bx, by);
-        viewportCtx.lineTo(bx+w, by);
-        viewportCtx.lineTo(bx+w, by+h);
-        viewportCtx.lineTo(bx, by+h);
-        viewportCtx.closePath();
-        viewportCtx.stroke();
-        
-        // handles
-        if (!boxing) {
-            if (handleMouse==1) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
-            viewportCtx.beginPath()
-            viewportCtx.arc(pansX+w/2, pansY, handleRadius/scale, 0, 2 * Math.PI);
+            // alternating black and white dashes (render box)
+            viewportCtx.beginPath();
+            viewportCtx.moveTo(bx, by);
+            viewportCtx.lineTo(bx+w, by);
+            viewportCtx.lineTo(bx+w, by+h);
+            viewportCtx.lineTo(bx, by+h);
+            viewportCtx.closePath();
             viewportCtx.stroke();
             
-            if (handleMouse==2) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
-            viewportCtx.beginPath()
-            viewportCtx.arc(pansX+w, pansY+h/2, handleRadius/scale, 0, 2 * Math.PI);
-            viewportCtx.stroke();
+            // handles
+            if (!boxing) {
+                if (handleMouse==1) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+                viewportCtx.beginPath()
+                viewportCtx.arc(pansX+w/2, pansY, handleRadius/scale, 0, 2 * Math.PI);
+                viewportCtx.stroke();
+                
+                if (handleMouse==2) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+                viewportCtx.beginPath()
+                viewportCtx.arc(pansX+w, pansY+h/2, handleRadius/scale, 0, 2 * Math.PI);
+                viewportCtx.stroke();
+                
+                if (handleMouse==3) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+                viewportCtx.beginPath()
+                viewportCtx.arc(pansX+w/2, pansY+h, handleRadius/scale, 0, 2 * Math.PI);
+                viewportCtx.stroke();
+                
+                if (handleMouse==4) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
+                viewportCtx.beginPath()
+                viewportCtx.arc(pansX, pansY+h/2, handleRadius/scale, 0, 2 * Math.PI);
+                viewportCtx.stroke();
+            }
             
-            if (handleMouse==3) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
-            viewportCtx.beginPath()
-            viewportCtx.arc(pansX+w/2, pansY+h, handleRadius/scale, 0, 2 * Math.PI);
-            viewportCtx.stroke();
+            // brush preview
+            if (pointerWidth>0) {
+                viewportCtx.beginPath()
+                viewportCtx.arc(prevX/scale, prevY/scale, pointerWidth, 0, 2 * Math.PI);
+                viewportCtx.stroke();
+            }
             
-            if (handleMouse==4) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
-            viewportCtx.beginPath()
-            viewportCtx.arc(pansX, pansY+h/2, handleRadius/scale, 0, 2 * Math.PI);
-            viewportCtx.stroke();
+            // Set line color
+            viewportCtx.strokeStyle = "#111";
+            viewportCtx.lineDashOffset = 5/scale;
         }
-        
-        // brush preview
-        if (pointerWidth>0 && !spacebarDown) {
-            viewportCtx.beginPath()
-            viewportCtx.arc(prevX/scale, prevY/scale, pointerWidth, 0, 2 * Math.PI);
-            viewportCtx.stroke();
-        }
-        
-        // Set line color
-        viewportCtx.strokeStyle = "#111";
-        viewportCtx.lineDashOffset = 5/scale;
     }
 };
 
@@ -535,6 +551,11 @@ viewport.addEventListener("mousedown", function(e) {
 	
     var pansX = parseInt(panX/scale);
     var pansY = parseInt(panY/scale);
+    
+    if (e.button===0 && ctrlDown && currentTool=='move') {
+        var lyr = getLayerAtLocation(prevX, prevY);
+        if (lyr) selectLayer(lyr.name);
+    }
     
     if (!currentLayer.visible) return;
     
@@ -554,7 +575,6 @@ viewport.addEventListener("mousedown", function(e) {
 			maskPath = new Path2D();
 			maskPath.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
 		}
-		draw();
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
         var lineWidth = document.getElementById('brush-slider').value;
@@ -562,7 +582,6 @@ viewport.addEventListener("mousedown", function(e) {
 		currentCtx.beginPath();
 		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
-		draw();
 	} else if (e.button === 0 && currentTool === 'mask') {
 		masking = true;
         var lineWidth = document.getElementById('mask-slider').value;
@@ -570,13 +589,13 @@ viewport.addEventListener("mousedown", function(e) {
 		currentCtx.beginPath();
 		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
 		currentCtx.fill();
-		draw();
 	} else if (pickMouse > 0 && currentTool === 'move') {
 		boxing = true;
 	} else if (e.button === 0 && currentTool === 'move' && (currentLayer.name != 'brush' && currentLayer.name != 'mask')) {
         moving = true;
-		draw();
 	}
+	
+    draw();
 });
 
 // Set up mousemove event listener
@@ -790,12 +809,14 @@ window.onload = function(e) {
 }
 
 document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey) ctrlDown = true;
 	if (e.key === ' ') {
 		spacebarDown = true;
 	}
 });
 
 document.addEventListener('keyup', function(e) {
+    ctrlDown = false;
 	if (e.key === ' ') {
 		spacebarDown = false;
 	}

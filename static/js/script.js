@@ -415,7 +415,13 @@ function draw() {
 			if (autoMaskEnabled) continue;
 			viewportCtx.globalAlpha = 0.5;
 		}
-		viewportCtx.drawImage(lyr.canvas, pansX + lyr.x, pansY + lyr.y);
+        var x = pansX + lyr.x;
+        var y = pansY + lyr.y;
+        if (boxing && (lyr.name === 'mask' || lyr.name === 'brush')) {
+			x += tempRBx;
+			y += tempRBy;
+        }
+		viewportCtx.drawImage(lyr.canvas, x, y);
 		viewportCtx.globalAlpha = 1;
 	}
 	
@@ -426,12 +432,10 @@ function draw() {
 	viewportCtx.setLineDash([5./scale, 5./scale]);
     viewportCtx.lineDashOffset = 0;
 
-    var lyridx = layers.length-layerCtrl.selectedIndex-1;
-    var lyr = layers[lyridx];
-    var w = lyr.canvas.width;
-    var h = lyr.canvas.height;
+    var w = renderBoxWidth;
+    var h = renderBoxHeight;
     
-    if (lyr.name != 'render' && lyr.name != 'brush' && lyr.name != 'mask' && pickMouse!=0)
+    if (pickMouse!=0 && currentTool === 'move')
         viewportCtx.lineWidth = boundsLineWidthHighligh/scale;
     else viewportCtx.lineWidth = boundsLineWidth/scale;
     
@@ -458,7 +462,7 @@ function draw() {
         viewportCtx.stroke();
         
         // handles
-        if (lyr.name != 'mask' && lyr.name != 'brush' && !boxing) {
+        if (!boxing) {
             if (handleMouse==1) viewportCtx.lineWidth = boundsLineWidthHighligh/scale; else viewportCtx.lineWidth = boundsLineWidth/scale;
             viewportCtx.beginPath()
             viewportCtx.arc(pansX+w/2, pansY, handleRadius/scale, 0, 2 * Math.PI);
@@ -639,10 +643,8 @@ viewport.addEventListener("mousemove", function(e) {
         currentLayer.x += dx/scale;
         currentLayer.y += dy/scale;
     } else { // draw handles
-        var lyridx = layers.length-layerCtrl.selectedIndex-1;
-        var lyr = layers[lyridx];
-        var w = lyr.canvas.width;
-        var h = lyr.canvas.height;
+        var w = renderBoxWidth;
+        var h = renderBoxHeight;
         
         var mx = x/scale-pansX;
         var my = y/scale-pansY;

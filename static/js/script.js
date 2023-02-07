@@ -280,17 +280,14 @@ function deleteLayer() {
     layers.splice(idx, 1);
     selectLayerByIndex(Math.max(idx-1,0));
     refreshLayerControl();
-    draw();
 }
 
 function clearLayer() {
-	currentCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-	var idx = layerCtrl.selectedIndex;
-	var lidx = layers.length-idx-1;
-	var lyr = layers[lidx];
-	if (!(lyr.name=='mask' || lyr.name==='brush')) {
+	if (currentLayer.name==='mask' || currentLayer.name==='brush') {
+        currentCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+	} else {
         deleteLayer()
-	}
+    }
 	draw();
 }
 

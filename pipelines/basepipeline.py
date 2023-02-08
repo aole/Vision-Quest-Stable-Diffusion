@@ -34,8 +34,8 @@ def prepare_mask_and_masked_image(image, mask, width, height, scale_factor):
             mask = np.concatenate([np.array(m.convert("L"))[None, None, :] for m in mask], axis=0)
             mask = mask.astype(np.float32) / 255.0
             
-        mask[mask < 0.5] = 0
-        mask[mask >= 0.5] = 1
+        mask[mask < 0.4] = 0
+        mask[mask >= 0.4] = 1
         mask = torch.from_numpy(mask)
 
         # image = image * (mask < 0.5)
@@ -152,6 +152,7 @@ class BasePipeline(DiffusionPipeline):
         guidance_scale: Optional[float] = 7.5,
         negative_prompt: Optional[str] = ''
     ):
+        print('batch_size:', batch_size, flush=True)
         # Default height and width to unet
         height = height or self.unet.config.sample_size * self.vae_scale_factor
         width = width or self.unet.config.sample_size * self.vae_scale_factor

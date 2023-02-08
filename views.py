@@ -34,12 +34,14 @@ def txt2img():
   negative = request.form.get('negative')
   num_steps = int(request.form.get('numSteps'))
   guidance = float(request.form.get('guidance'))
+  batch_size = int(request.form.get('batch_size'))
   
-  outimg = sd_generate(prompt=prompt, negative=negative, steps=num_steps, guidance=guidance);
-  print(f'Num images generated: {len(outimg)}', flush=True)
-  outimg[0].save('static/images/image.png')
+  images = sd_generate(prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size);
+  print(f'Num images generated: {len(images)}', flush=True)
+  for i, img in enumerate(images):
+    img.save(f'static/images/image{i}.png')
   
-  return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
+  return jsonify({'url':'/static/images/image', 'count': len(images)})
 
 @views.route('/img2img', methods=['POST'])
 def img2img():
@@ -47,17 +49,19 @@ def img2img():
   negative = request.form.get('negative')
   num_steps = int(request.form.get('numSteps'))
   guidance = float(request.form.get('guidance'))
+  batch_size = int(request.form.get('batch_size'))
   noise = float(request.form.get('noise'))/100
   _, img_data = request.form.get('image').split(',')
   
   img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
   
-  outimg = sd_generate(image=img, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise)
-  print(f'Num images generated: {len(outimg)}', flush=True)
+  images = sd_generate(image=img, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
+  print(f'Num images generated: {len(images)}', flush=True)
   
-  outimg[0].save('static/images/image.png')
+  for i, img in enumerate(images):
+    img.save(f'static/images/image{i}.png')
   
-  return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
+  return jsonify({'url':'/static/images/image', 'count': len(images)})
 
 @views.route('/inpainting', methods=['POST'])
 def inpainting():
@@ -65,12 +69,15 @@ def inpainting():
   negative = request.form.get('negative')
   num_steps = int(request.form.get('numSteps'))
   guidance = float(request.form.get('guidance'))
+  batch_size = int(request.form.get('batch_size'))
   noise = float(request.form.get('noise'))/100 # converting user scale of 0-100 to model scale of 0-1.
   _, img_data = request.form.get('image').split(',')
   _, mask_data = request.form.get('mask').split(',')
   
-  img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
+  orig = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
   mask = Image.open(BytesIO(base64.b64decode(mask_data)))
+  
+  mask = mask.filter(ImageFilter.MaxFilter(9))
   
   npimg = np.array(mask)
   trans_mask = (npimg[:,:,3] == 0)
@@ -79,15 +86,14 @@ def inpainting():
   pastemask = Image.fromarray(npimg)
   pastemask = pastemask.filter(ImageFilter.BoxBlur(2))
   
-  mask = mask.filter(ImageFilter.BoxBlur(2))
   mask = mask.convert("RGB")
-  outimg = sd_generate(image=img, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise)
-  outimg = outimg[0]
-  outimg.paste(img, (0,0), pastemask)
+  images = sd_generate(image=orig, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
   
-  outimg.save('static/images/image.png')
+  for i, img in enumerate(images):
+    img.paste(orig, (0,0), pastemask)
+    img.save(f'static/images/image{i}.png')
   
-  return jsonify({'image':'/static/images/image.png?v=' + str(time.time())})
+  return jsonify({'url':'/static/images/image', 'count': len(images)})
 
 @views.route('/change_model', methods=['POST'])
 def change_model():

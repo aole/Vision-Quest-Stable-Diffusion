@@ -2,7 +2,6 @@ Todo (in no particular order)
 ====
 1. change brush width using keyboard shortcut and mouse drag.
 2. color picker on key press.
-3. and batch size, batch count. add all rendered images to layer list.
 4. folders in layer list.
 5. status bar with information/tips about current operation.
 6. model dropdown list to display all modes without the need of removing text from the textbox.
@@ -34,4 +33,5 @@ Todo (in no particular order)
 32. scale image/layer. use model?
 33. clone tool.
 34. add a close up clause to generate zoomed-in the masked area.
-35. 
+35. schedulers
+36. 

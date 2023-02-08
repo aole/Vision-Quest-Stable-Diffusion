@@ -13,7 +13,7 @@
 	  <div class="left">
 		<h1>Vision Quest</h1>
 		<textarea id="prompt" rows=8 placeholder="Enter prompt...">a beautiful country side house, lake, mountains, trees</textarea>
-		<textarea id="negative" rows=8 placeholder="Enter negagive prompt...">people</textarea>
+		<textarea id="negative" rows=8 placeholder="Enter negagive prompt...">cropped, blurry</textarea>
 		<input type="button" id="generate" value="Generate" onclick="generate()"></input>
 		<HR>
 		<div class="container-slider">
@@ -30,6 +30,11 @@
 			<label for="noise-slider">Noise</label>
 			<input type=range id="noise-slider" title="Noise Strength" min=0 max=100 value=80></input>
 			<label id="noise-label">80</label>
+		</div>
+		<div class="container-slider">
+			<label for="batch-slider">Batch</label>
+			<input type=range id="batch-slider" title="Batch Size" min=1 max=8 value=4></input>
+			<label id="batch-label">4</label>
 		</div>
 		<hr>
         <input list="model-ids" id="model-id-input" value={{ model_id }} size=4 onchange="changeModel()">

@@ -41,7 +41,7 @@ def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7
 
     pipe = pipe.to(device)
     
-    images = pipe(prompt=prompt, image=image, mask=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative, strength=noise)
+    images = pipe(prompt=prompt, image=image, mask=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative, strength=noise, batch_size=batch_size)
     
     return images
     
@@ -51,7 +51,7 @@ def sd_get_model_id():
 def sd_change_model(mid):
     global model_id
     try:
-        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(mid, safety_checker=None)
+        pipe = BasePipeline.from_pretrained(mid, safety_checker=None)
         model_id = mid
         print('Success changing model to', mid)
     except:

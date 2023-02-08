@@ -100,6 +100,11 @@ noise_slider.oninput = function() {
   document.getElementById('noise-label').innerText = noise_slider.value;
 }
 
+const batch_slider = document.getElementById('batch-slider');
+batch_slider.oninput = function() {
+  document.getElementById('batch-label').innerText = batch_slider.value;
+}
+
 const brush_slider = document.getElementById('brush-slider');
 brush_slider.oninput = function() {
 	document.getElementById('brush-label').innerText = brush_slider.value;
@@ -224,14 +229,20 @@ function addLayer(canvas, name, position=-1) {
     return lyr;
 }
 
-function addRenderLayer(img) {
-	var cvs = new OffscreenCanvas(img.width, img.height);
-	var ctx = cvs.getContext('2d');
-	ctx.drawImage(img, 0, 0);
-	var name = 'render'+layers.length;
-	addLayer(cvs, name, layers.length-2);
-	setCurrentTool("move");
-	draw();
+function addRenderLayer(path) {
+	var img = new Image();
+	img.src = path;
+
+	// Draw the image on the canvas when it finishes loading
+	img.onload = function() {
+		var cvs = new OffscreenCanvas(img.width, img.height);
+		var ctx = cvs.getContext('2d');
+		ctx.drawImage(img, 0, 0);
+		var name = 'render'+layers.length;
+		addLayer(cvs, name, layers.length-2);
+		setCurrentTool("move");
+		draw();
+	}
 }
 
 function combineLayers() {
@@ -240,7 +251,7 @@ function combineLayers() {
     var r = -100000;
     var b = -100000;
     for(let lyr of layers) {
-        if(lyr.name==='brush' || lyr.name==='mask') continue;
+        if(lyr.name==='brush' || lyr.name==='mask' || !lyr.visible) continue;
         l = lyr.x < l ? lyr.x : l;
         t = lyr.y < t ? lyr.y : t;
         r = lyr.x + lyr.canvas.width > r ? lyr.x + lyr.canvas.width : r;
@@ -250,12 +261,11 @@ function combineLayers() {
     var h = b-t;
     
     if (w<=0 || h<=0) return;
-    console.log(l, t, r, b, w, h);
     
 	var cvs = new OffscreenCanvas(w, h);
 	var ctx = cvs.getContext('2d');
     for(let lyr of layers) {
-        if(lyr.name==='brush' || lyr.name==='mask') continue;
+        if(lyr.name==='brush' || lyr.name==='mask' || !lyr.visible) continue;
         ctx.drawImage(lyr.canvas, lyr.x-l, lyr.y-t);
     }
     layers.splice(0, layers.length-2);
@@ -326,25 +336,17 @@ function getLayerAtLocation(x, y) {
     return null;
 }
 
-function updateRenderImage(url) {
+function updateRenderImage(url, batch_size) {
 	// Create a new image object and set its src property
-	var rndrimg = new Image();
-	rndrimg.src = url;
+	for (var i=0; i<batch_size; i++) {
+		 addRenderLayer(url+i+'.png');
+	}
 
 	// clear out mask and brush layers
 	var lyr = findLayerByName('mask');
 	// lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
 	var lyr = findLayerByName('brush');
 	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
-	
-	// Draw the image on the canvas when it finishes loading
-	rndrimg.onload = function() {
-		//const lyr = findLayerByName('render');
-		//const ctx = lyr.ctx;
-		//ctx.drawImage(rndrimg, -lyr.x, -lyr.y);
-		//draw();
-		addRenderLayer(rndrimg);
-	}
 }
 
 // Set up image for rendering

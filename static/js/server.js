@@ -7,6 +7,7 @@ function generate() {
 	const negative = document.getElementById('negative').value;
 	const numSteps = document.getElementById('steps-slider').value;
 	const guidance = document.getElementById('guidance-slider').value;
+	const batch_size = document.getElementById('batch-slider').value;
 
 	var formData = new FormData();
 
@@ -14,6 +15,7 @@ function generate() {
 	formData.append('negative', negative);
 	formData.append('numSteps', numSteps);
 	formData.append('guidance', guidance);
+	formData.append('batch_size', batch_size);
 
 	var mode = 'txt2img';
     var cimg = generateModelImage();
@@ -44,8 +46,10 @@ function generate() {
     xhr.open("POST", mode, true);
     xhr.onload = function () {
       if (xhr.status === 200) {
-        var url = JSON.parse(xhr.response).image + '?v=' + cacheBustingParam;
-        updateRenderImage(url);
+		var res = JSON.parse(xhr.response)
+		var batch_size = res.count;
+        var url = res.url;
+        updateRenderImage(url, batch_size);
       } else {
         console.error('Error:', xhr);
       }

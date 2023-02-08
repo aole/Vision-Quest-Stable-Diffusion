@@ -32,4 +32,6 @@ Todo (in no particular order)
 30. brush textures.
 31. transform layer.
 32. scale image/layer. use model?
-33. 
+33. clone tool.
+34. add a close up clause to generate zoomed-in the masked area.
+35. 

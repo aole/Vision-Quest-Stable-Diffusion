@@ -61,7 +61,7 @@ var maskCanvas = document.createElement('canvas');
 maskCanvas.width = renderBoxWidth;
 maskCanvas.height = renderBoxHeight;
 maskCanvas.getContext('2d').fillStyle = maskColor;
-addLayer(maskCanvas, "mask");
+var maskLayer = addLayer(maskCanvas, "mask");
 
 var currentCanvas = null;
 var currentCtx = null;
@@ -333,7 +333,7 @@ function updateRenderImage(url) {
 
 	// clear out mask and brush layers
 	var lyr = findLayerByName('mask');
-	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
+	// lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
 	var lyr = findLayerByName('brush');
 	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
 	
@@ -816,6 +816,10 @@ document.addEventListener('keyup', function(e) {
     ctrlDown = false;
 	if (e.key === ' ') {
 		spacebarDown = false;
+	} else if (e.key === 'h') {
+		maskLayer.visible = !maskLayer.visible;
+		refreshLayerControl();
+		draw();
 	}
 });
 

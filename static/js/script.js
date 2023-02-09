@@ -46,28 +46,7 @@ viewport.height = parent.offsetHeight-25; // padding
 // Get canvas context
 var viewportCtx = viewport.getContext("2d");
 
-/**
-    Layers
-**/
-var layers = [];
-var layerCtrl = document.getElementById("layers-list");
-
-// Set up image for drawing
-var drawCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
-drawCanvas.getContext('2d').fillStyle = brushColor;
-addLayer(drawCanvas, "brush");
-
-// Set up image for masking
-var maskCanvas = document.createElement('canvas');
-maskCanvas.width = renderBoxWidth;
-maskCanvas.height = renderBoxHeight;
-maskCanvas.getContext('2d').fillStyle = maskColor;
-var maskLayer = addLayer(maskCanvas, "mask");
-
-var currentCanvas = null;
-var currentCtx = null;
-
-selectLayer("brush");
+var lyrMgr = new LayerManager(renderBoxWidth, renderBoxHeight, brushColor, maskColor);
 
 var prevX = 0;
 var prevY = 0;
@@ -124,7 +103,7 @@ color_picker.onchange = function(e) {
     setCurrentTool('brush');
 	// Get the chosen color
 	lineColor = e.target.value;
-	currentCtx.fillStyle = lineColor;
+	lyrMgr.currentCtx.fillStyle = lineColor;
 }
 
 // Set up the change event handler for the mask color picker
@@ -133,7 +112,7 @@ mask_picker.onchange = function(e) {
     setCurrentTool('mask');
 	// Get the chosen color
 	maskColor = e.target.value;
-	currentCtx.fillStyle = maskColor;
+	lyrMgr.currentCtx.fillStyle = maskColor;
 }
 
 /**
@@ -172,191 +151,22 @@ function setCurrentTool(tool) {
     
     // select appropriate layer
     if (tool==='brush' || tool==='mask')
-        selectLayer(tool);
+        lyrMgr.selectLayer(tool);
 	
 	if (tool==='mask')
 		autoMaskEnabled = false;
 }
 
-function findLayerByName(name) {
-    return layers.find((e) => e.name===name);
-}
-
-function findLayerIndexByName(name) {
-    return layers.findIndex((e) => e.name===name);
-}
-
-function selectLayer(name) {
-    var idx = findLayerIndexByName(name);
-    selectLayerByIndex(idx);
-}
-
-function selectLayerByIndex(idx) {
-    layerCtrl.selectedIndex = layers.length-1-idx;
-	currentLayer = layers[idx];
-    currentCanvas = layers[idx].canvas;
-    currentCtx = layers[idx].ctx;
-}
-
-function refreshLayerControl() {
-    selectidx = 0;
-    var li = 0;
-    const max_len = 30;
-	layerCtrl.options.length = 0;
-	for (let i=layers.length-1; i>=0; i--) {
-		var lyr = layers[i];
-        var caption = lyr.name;
-        var l = max_len-caption.length;
-        caption += '_'.repeat(l) + (lyr.visible?'@':'_');
-		layerCtrl.options[layerCtrl.options.length] = new Option(caption, lyr.name);
-        if (lyr.name === currentLayer.name)
-            selectidx = li;
-        li++;
-	}
-	layerCtrl.selectedIndex = selectidx;
-}
-
-function addLayer(canvas, name, position=-1) {
-    var ctx = canvas.getContext('2d');
-    var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0, visible: true}
-    if (position===-1)
-        layers.push(lyr);
-    else
-        layers.splice(position, 0, lyr);
-	
-	selectLayer(name);
-    refreshLayerControl();
-    
-    return lyr;
-}
-
-function createLayerName(prefix) {
-    var num = 1;
-    for(var lyr of layers) {
-        if (lyr.name.substring(0, prefix.length) === prefix) {
-            var lnum = parseInt(lyr.name.substring(prefix.length));
-            if (lnum>=num) num = lnum+1;
-        }
-    }
-    return prefix+num;
-}
-
-function addRenderLayer(path) {
-	var img = new Image();
-	img.src = path;
-
-	// Draw the image on the canvas when it finishes loading
-	img.onload = function() {
-		var cvs = new OffscreenCanvas(img.width, img.height);
-		var ctx = cvs.getContext('2d');
-		ctx.drawImage(img, 0, 0);
-		addLayer(cvs, createLayerName('render'), layers.length-2);
-		setCurrentTool("move");
-		draw();
-	}
-}
-
-function combineLayers() {
-    var l = 100000;
-    var t = 100000;
-    var r = -100000;
-    var b = -100000;
-    for(let lyr of layers) {
-        if(lyr.name==='brush' || lyr.name==='mask' || !lyr.visible) continue;
-        l = lyr.x < l ? lyr.x : l;
-        t = lyr.y < t ? lyr.y : t;
-        r = lyr.x + lyr.canvas.width > r ? lyr.x + lyr.canvas.width : r;
-        b = lyr.y + lyr.canvas.height > b ? lyr.y + lyr.canvas.height : b;
-    }
-    var w = r-l;
-    var h = b-t;
-    
-    if (w<=0 || h<=0) return;
-    
-	var cvs = new OffscreenCanvas(w, h);
-	var ctx = cvs.getContext('2d');
-    for(let lyr of layers) {
-        if(lyr.name==='brush' || lyr.name==='mask' || !lyr.visible) continue;
-        ctx.drawImage(lyr.canvas, lyr.x-l, lyr.y-t);
-    }
-    layers.splice(0, layers.length-2);
-    
-    var name = createLayerName('image');
-	lyr = addLayer(cvs, name, layers.length-2);
-    lyr.x = l;
-    lyr.y = t;
-    
-	selectLayer(name);
-	setCurrentTool("move");
-	draw();
-}
-
-function deleteLayer() {
-    if (currentLayer.name === 'brush' ||
-        currentLayer.name === 'mask') {
-        console.log('Brush or Mask layer cannot be deleted');
-        return;
-    }
-    var idx = layers.findIndex((e) => e === currentLayer);
-    layers.splice(idx, 1);
-    selectLayerByIndex(Math.max(idx-1,0));
-    refreshLayerControl();
-}
-
-function clearLayer() {
-	if (currentLayer.name==='mask' || currentLayer.name==='brush') {
-        currentCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-	} else {
-        deleteLayer()
-    }
-	draw();
-}
-
-function moveLayerUp() {
-    if(layers.length<4) return; // only one movable layer
-    var idx = findLayerIndexByName(currentLayer.name);
-    if (idx >= layers.length-3) return; // cannot move further up
-    [layers[idx], layers[idx+1]] = [layers[idx+1], layers[idx]];
-    refreshLayerControl();
-	draw();
-}
-
-function moveLayerDown() {
-    if(layers.length<4) return; // only one movable layer
-    var idx = findLayerIndexByName(currentLayer.name);
-    if (idx === 0) return; // cannot move further down
-    [layers[idx], layers[idx-1]] = [layers[idx-1], layers[idx]];
-    refreshLayerControl();
-	draw();
-}
-
-function toggleVisible() {
-    currentLayer.visible = !currentLayer.visible;
-    refreshLayerControl();
-    draw();
-}
-
-function getLayerAtLocation(x, y) {
-    x = (x-panX) / scale;
-    y = (y-panY) / scale;
-    for(var i=layers.length-3; i>=0; i--) {
-        var lyr = layers[i];
-        if (x>=lyr.x && y>=lyr.y && x<=lyr.x+lyr.canvas.width && y<=lyr.y+lyr.canvas.height)
-            return lyr;
-    }
-    return null;
-}
-
 function updateRenderImage(url, batch_size) {
 	// Create a new image object and set its src property
 	for (var i=0; i<batch_size; i++) {
-		 addRenderLayer(url+i+'.png');
+		lyrMgr.addRenderLayer(url+i+'.png');
 	}
 
 	// clear out mask and brush layers
-	var lyr = findLayerByName('mask');
+	var lyr = lyrMgr.findLayerByName('mask');
 	// lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
-	var lyr = findLayerByName('brush');
+	var lyr = lyrMgr.findLayerByName('brush');
 	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
 }
 
@@ -369,7 +179,7 @@ var modelCtx = modelCanvas.getContext('2d', {willReadFrequently: true});
 function generateModelImage() {
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
-	for (let lyr of layers) {
+	for (let lyr of lyrMgr.layers) {
 		if (lyr.name === 'mask')
 			continue;
 		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
@@ -408,7 +218,7 @@ function generateModelImage() {
 }
 
 function generateMaskImage() {
-	var masklyr = findLayerByName('mask');
+	var masklyr = lyrMgr.findLayerByName('mask');
 	const pixelBuffer = new Uint32Array(masklyr.ctx.getImageData(0, 0, masklyr.canvas.width, masklyr.canvas.height).data.buffer);
 	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
 		return 0;
@@ -455,7 +265,7 @@ function draw() {
 	}
 	
 	// Draw layers onto canvas
-	for (let lyr of layers) {
+	for (let lyr of lyrMgr.layers) {
         if (!lyr.visible) continue;
 		if (lyr.name === 'mask') {
 			if (autoMaskEnabled) continue;
@@ -563,11 +373,13 @@ viewport.addEventListener("mousedown", function(e) {
     var pansY = parseInt(panY/scale);
     
     if (e.button===0 && ctrlDown && currentTool=='move') {
-        var lyr = getLayerAtLocation(prevX, prevY);
-        if (lyr) selectLayer(lyr.name);
+        var x = (prevX-panX) / scale;
+        var y = (prevX-panY) / scale;
+        var lyr = lyrMgr.getLayerAtLocation(x, y);
+        if (lyr) lyrMgr.selectLayer(lyr.name);
     }
     
-    if (!currentLayer.visible) return;
+    if (!lyrMgr.currentLayer.visible) return;
     
     // Check if left mouse button was pressed
     if ((e.button === 0 && spacebarDown)||e.button===1) {
@@ -576,35 +388,35 @@ viewport.addEventListener("mousedown", function(e) {
     } else if (e.button === 0 && currentTool === 'brush') {
 		drawing = true;
         var lineWidth = document.getElementById('brush-slider').value;
-		currentCtx.globalCompositeOperation = "source-over";
-		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-		currentCtx.fill();
+		lyrMgr.currentCtx.globalCompositeOperation = "source-over";
+		lyrMgr.currentCtx.beginPath();
+		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		lyrMgr.currentCtx.fill();
 		
 		if (autoMaskEnabled) {
 			maskPath = new Path2D();
-			maskPath.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
+			maskPath.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
 		}
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
         var lineWidth = document.getElementById('brush-slider').value;
-		currentCtx.globalCompositeOperation = "destination-out";
-		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-		currentCtx.fill();
+		lyrMgr.currentCtx.globalCompositeOperation = "destination-out";
+		lyrMgr.currentCtx.beginPath();
+		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		lyrMgr.currentCtx.fill();
 	} else if (e.button === 0 && currentTool === 'mask') {
 		masking = true;
         var lineWidth = document.getElementById('mask-slider').value;
-		currentCtx.globalCompositeOperation = "source-over";
-		currentCtx.beginPath();
-		currentCtx.arc((prevX/scale-pansX) -currentLayer.x, (prevY/scale-pansY) -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-		currentCtx.fill();
+		lyrMgr.currentCtx.globalCompositeOperation = "source-over";
+		lyrMgr.currentCtx.beginPath();
+		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		lyrMgr.currentCtx.fill();
 	} else if (pickMouse > 0 && currentTool === 'move') {
 		boxing = true;
-	} else if (e.button === 0 && currentTool === 'move' && (currentLayer.name != 'brush' && currentLayer.name != 'mask')) {
+	} else if (e.button === 0 && currentTool === 'move' && (lyrMgr.currentLayer.name != 'brush' && lyrMgr.currentLayer.name != 'mask')) {
         moving = true;
-        origX = currentLayer.x;
-        origY = currentLayer.y;
+        origX = lyrMgr.currentLayer.x;
+        origY = lyrMgr.currentLayer.y;
 	}
 	
     draw();
@@ -640,13 +452,13 @@ viewport.addEventListener("mousemove", function(e) {
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-			currentCtx.fill();
+			lyrMgr.currentCtx.beginPath();
+			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			lyrMgr.currentCtx.fill();
 			
 			if (autoMaskEnabled) {
 				path = new Path2D();
-				path.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2+5, 0, 2 * Math.PI);
+				path.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2+5, 0, 2 * Math.PI);
 				maskPath.addPath(path);
 			}
 		}
@@ -666,9 +478,9 @@ viewport.addEventListener("mousemove", function(e) {
         var lineWidth = document.getElementById('brush-slider').value;
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-			currentCtx.fill();
+			lyrMgr.currentCtx.beginPath();
+			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			lyrMgr.currentCtx.fill();
 		}
 	} else if (masking) {
 		// Calculate the distance between the current and previous cursor positions
@@ -687,9 +499,9 @@ viewport.addEventListener("mousemove", function(e) {
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			currentCtx.beginPath();
-			currentCtx.arc((prevX/scale-pansX) + xIncrement * i -currentLayer.x, (prevY/scale-pansY) + yIncrement * i -currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-			currentCtx.fill();
+			lyrMgr.currentCtx.beginPath();
+			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			lyrMgr.currentCtx.fill();
 		}
 	} else if (boxing) {
 		// move the render box
@@ -702,8 +514,8 @@ viewport.addEventListener("mousemove", function(e) {
 		var dx = x - prevX;
 		var dy = y - prevY;
         
-        currentLayer.x += dx/scale;
-        currentLayer.y += dy/scale;
+        lyrMgr.currentLayer.x += dx/scale;
+        lyrMgr.currentLayer.y += dy/scale;
     } else { // draw handles
         var w = renderBoxWidth;
         var h = renderBoxHeight;
@@ -746,7 +558,7 @@ viewport.addEventListener("mouseup", function(e) {
     // Check if left mouse button was released
     if (e.button === 0) {
 		if (drawing && autoMaskEnabled) {
-			var lyr = findLayerByName('mask');
+			var lyr = lyrMgr.findLayerByName('mask');
 			lyr.ctx.fill(maskPath);
 		} else if (boxing) {
             var trbx = tempX/scale;
@@ -758,15 +570,15 @@ viewport.addEventListener("mouseup", function(e) {
 			panX += dx*scale;
 			panY += dy*scale;
             
-			for(let lyr of layers) {
+			for(let lyr of lyrMgr.layers) {
 				if (lyr.name=='mask' || lyr.name==='brush') continue;
 				lyr.x -= dx;
 				lyr.y -= dy;
 			}
 			tempX = tempY = 0;
 		} else if (moving) {
-            if (!(origX===currentLayer.x && origY===currentLayer.y))
-                undo.add(new LayerMovedChange(currentLayer, origX, origY, currentLayer.x, currentLayer.y));
+            if (!(origX===lyrMgr.currentLayer.x && origY===lyrMgr.currentLayer.y))
+                undo.add(new LayerMovedChange(lyrMgr.currentLayer, origX, origY, lyrMgr.currentLayer.x, lyrMgr.currentLayer.y));
         }
     }
     // Reset flags
@@ -774,8 +586,8 @@ viewport.addEventListener("mouseup", function(e) {
     draw();
 });
 
-layerCtrl.addEventListener("change", function(e) {
-    selectLayer(e.target.value);
+lyrMgr.layerCtrl.addEventListener("change", function(e) {
+    lyrMgr.selectLayer(e.target.value);
     draw();
 });
 
@@ -800,10 +612,11 @@ viewport.ondrop = function(e) {
         var cvs = new OffscreenCanvas(img.width, img.height);
         var ctx = cvs.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        var name = createLayerName('image');
-		addLayer(cvs, name, layers.length-2);
-        selectLayer(name);
+        var name = lyrMgr.createLayerName('image');
+		lyrMgr.addLayer(cvs, name, lyrMgr.layers.length-2);
+        lyrMgr.selectLayer(name);
         setCurrentTool("move");
+        
 		draw();
 	}
     // Set src of image to data URL
@@ -863,3 +676,8 @@ viewport.addEventListener('wheel', function(e) {
   
   draw();
 });
+
+function clearLayer() { lyrMgr.clearLayer(); draw(); }
+function combineLayers() { lyrMgr.combineLayers(); draw(); }
+function moveLayerDown() { lyrMgr.moveLayerDown(); draw(); }
+function moveLayerUp() { lyrMgr.moveLayerUp(); draw(); }

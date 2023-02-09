@@ -33,4 +33,5 @@ Todo (in no particular order)
 33. clone tool.
 34. add a close up clause to generate zoomed-in the masked area.
 35. schedulers
-36. 
+36. select multiple layer. how would different operations work?
+37. 

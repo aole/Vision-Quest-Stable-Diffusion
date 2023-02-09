@@ -52,10 +52,6 @@ var viewportCtx = viewport.getContext("2d");
 var layers = [];
 var layerCtrl = document.getElementById("layers-list");
 
-// Set up image for rendering
-//var renderCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
-//addLayer(renderCanvas, "render");
-
 // Set up image for drawing
 var drawCanvas = new OffscreenCanvas(renderBoxWidth, renderBoxHeight);
 drawCanvas.getContext('2d').fillStyle = brushColor;
@@ -234,6 +230,17 @@ function addLayer(canvas, name, position=-1) {
     return lyr;
 }
 
+function createLayerName(prefix) {
+    var num = 1;
+    for(var lyr of layers) {
+        if (lyr.name.substring(0, prefix.length) === prefix) {
+            var lnum = parseInt(lyr.name.substring(prefix.length));
+            if (lnum>=num) num = lnum+1;
+        }
+    }
+    return prefix+num;
+}
+
 function addRenderLayer(path) {
 	var img = new Image();
 	img.src = path;
@@ -243,8 +250,7 @@ function addRenderLayer(path) {
 		var cvs = new OffscreenCanvas(img.width, img.height);
 		var ctx = cvs.getContext('2d');
 		ctx.drawImage(img, 0, 0);
-		var name = 'render'+layers.length;
-		addLayer(cvs, name, layers.length-2);
+		addLayer(cvs, createLayerName('render'), layers.length-2);
 		setCurrentTool("move");
 		draw();
 	}
@@ -275,7 +281,7 @@ function combineLayers() {
     }
     layers.splice(0, layers.length-2);
     
-	var name = 'image'+layers.length;
+    var name = createLayerName('image');
 	lyr = addLayer(cvs, name, layers.length-2);
     lyr.x = l;
     lyr.y = t;
@@ -794,7 +800,7 @@ viewport.ondrop = function(e) {
         var cvs = new OffscreenCanvas(img.width, img.height);
         var ctx = cvs.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        var name = 'image'+layers.length;
+        var name = createLayerName('image');
 		addLayer(cvs, name, layers.length-2);
         selectLayer(name);
         setCurrentTool("move");
@@ -841,7 +847,7 @@ document.addEventListener('keyup', function(e) {
 		maskLayer.visible = !maskLayer.visible;
 		refreshLayerControl();
 		draw();
-	}
+    }
 });
 
 viewport.addEventListener('wheel', function(e) {

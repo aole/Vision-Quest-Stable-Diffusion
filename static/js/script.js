@@ -3,12 +3,15 @@ var cacheBustingParam = Date.now();
 
 var spacebarDown = false;
 var ctrlDown = false;
+var shiftDown = false;
 
-var tempRBx = 0;
-var tempRBy = 0;
+var tempX = 0;
+var tempY = 0;
 var renderBoxWidth = 512;
 var renderBoxHeight = 512;
 
+var origX = 0;
+var origY = 0;
 var gridSize = 64;
 
 let scale = 1.0;
@@ -27,6 +30,8 @@ var maskColor = '#F99';
 
 var currentPath;
 var maskPath;
+
+var undo = new UndoManager();
 
 // Get parent element
 var parent = document.getElementById("canvas-container");
@@ -453,8 +458,8 @@ function draw() {
         var x = pansX + lyr.x;
         var y = pansY + lyr.y;
         if (boxing && (lyr.name === 'mask' || lyr.name === 'brush')) {
-			x += tempRBx;
-			y += tempRBy;
+			x += tempX;
+			y += tempY;
         }
 		viewportCtx.drawImage(lyr.canvas, x, y);
 		viewportCtx.globalAlpha = 1;
@@ -485,8 +490,8 @@ function draw() {
         for (var i=0; i<2; i++) {
             var bx = pansX;
             var by = pansY;
-            var trbx = tempRBx/scale;
-            var trby = tempRBy/scale
+            var trbx = tempX/scale;
+            var trby = tempY/scale
             if (boxing) {
                 var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
                 var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
@@ -592,6 +597,8 @@ viewport.addEventListener("mousedown", function(e) {
 		boxing = true;
 	} else if (e.button === 0 && currentTool === 'move' && (currentLayer.name != 'brush' && currentLayer.name != 'mask')) {
         moving = true;
+        origX = currentLayer.x;
+        origY = currentLayer.y;
 	}
 	
     draw();
@@ -682,8 +689,8 @@ viewport.addEventListener("mousemove", function(e) {
 		// move the render box
 		var dx = x - prevX;
 		var dy = y - prevY;
-		tempRBx += dx;
-		tempRBy += dy;
+		tempX += dx;
+		tempY += dy;
 	} else if (moving) {
         // move the current layer
 		var dx = x - prevX;
@@ -736,8 +743,8 @@ viewport.addEventListener("mouseup", function(e) {
 			var lyr = findLayerByName('mask');
 			lyr.ctx.fill(maskPath);
 		} else if (boxing) {
-            var trbx = tempRBx/scale;
-            var trby = tempRBy/scale
+            var trbx = tempX/scale;
+            var trby = tempY/scale
             
             var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
             var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
@@ -750,8 +757,11 @@ viewport.addEventListener("mouseup", function(e) {
 				lyr.x -= dx;
 				lyr.y -= dy;
 			}
-			tempRBx = tempRBy = 0;
-		}
+			tempX = tempY = 0;
+		} else if (moving) {
+            if (!(origX===currentLayer.x && origY===currentLayer.y))
+                undo.add(new LayerMovedChange(currentLayer, origX, origY, currentLayer.x, currentLayer.y));
+        }
     }
     // Reset flags
     panning = drawing = erasing = masking = moving = boxing = false;
@@ -809,13 +819,22 @@ window.onload = function(e) {
 
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey) ctrlDown = true;
+    if (e.shiftKey) shiftDown = true;
+    
 	if (e.key === ' ') {
 		spacebarDown = true;
+	} else if (ctrlDown && shiftDown && e.key === 'Z') {
+        undo.redo();
+        draw();
+    } else if (ctrlDown && e.key === 'z') {
+        undo.undo();
+        draw();
 	}
 });
 
 document.addEventListener('keyup', function(e) {
     ctrlDown = false;
+    shiftDown = false;
 	if (e.key === ' ') {
 		spacebarDown = false;
 	} else if (e.key === 'h') {

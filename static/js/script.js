@@ -298,7 +298,7 @@ function draw() {
     pointerWidth *= scale / 2.0;
     
     // draw render edges, handles and brush
-    if (!spacebarDown && !ctrlDown) {
+    if (!spacebarDown) {
         // alternating black and white dashes
         for (var i=0; i<2; i++) {
             var le = pansX; // left edge
@@ -341,7 +341,7 @@ function draw() {
             }
             
             // handles
-            if (!(pickMouse>0 && handleMouse===0 && boxing)) {
+            if (!(pickMouse>0 && handleMouse===0 && boxing) && currentTool === 'move') {
                 // top edge handle
                 if (handleMouse==1) {
                     viewportCtx.lineWidth = boundsLineWidthHighlight/scale;
@@ -375,7 +375,7 @@ function draw() {
             // brush preview
             if (pointerWidth>0) {
                 viewportCtx.beginPath()
-                viewportCtx.arc(prevX/scale, prevY/scale, pointerWidth, 0, 2 * Math.PI);
+                viewportCtx.arc(prevX/scale, prevY/scale, pointerWidth/scale, 0, 2 * Math.PI);
                 viewportCtx.stroke();
             }
             
@@ -418,19 +418,19 @@ viewport.addEventListener("mousedown", function(e) {
         blyr.ctx.fillStyle = brushColor;
 		blyr.ctx.globalCompositeOperation = "source-over";
 		blyr.ctx.beginPath();
-		blyr.ctx.arc((prevX/scale-pansX) -blyr.x, (prevY/scale-pansY) -blyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		blyr.ctx.arc((prevX/scale-pansX) -blyr.x, (prevY/scale-pansY) -blyr.y, lineWidth / 2, 0, 2 * Math.PI);
 		blyr.ctx.fill();
 		
 		if (autoMaskEnabled) {
 			maskPath = new Path2D();
-			maskPath.arc((prevX/scale-pansX) -blyr.x, (prevY/scale-pansY) -blyr.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
+			maskPath.arc((prevX/scale-pansX) -blyr.x, (prevY/scale-pansY) -blyr.y, lineWidth / 2+5*scale, 0, 2 * Math.PI);
 		}
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
         var lineWidth = document.getElementById('brush-slider').value;
 		lyrMgr.currentCtx.globalCompositeOperation = "destination-out";
 		lyrMgr.currentCtx.beginPath();
-		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth / 2, 0, 2 * Math.PI);
 		lyrMgr.currentCtx.fill();
 	} else if (e.button === 0 && currentTool === 'mask') {
 		masking = true;
@@ -441,7 +441,7 @@ viewport.addEventListener("mousedown", function(e) {
         mlyr.ctx.fillStyle = maskColor;
 		mlyr.ctx.globalCompositeOperation = "source-over";
 		mlyr.ctx.beginPath();
-		mlyr.ctx.arc((prevX/scale-pansX) -mlyr.x, (prevY/scale-pansY) -mlyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		mlyr.ctx.arc((prevX/scale-pansX) -mlyr.x, (prevY/scale-pansY) -mlyr.y, lineWidth / 2, 0, 2 * Math.PI);
 		mlyr.ctx.fill();
 	} else if ((pickMouse > 0 || handleMouse > 0) && currentTool === 'move') {
 		boxing = true;
@@ -477,23 +477,23 @@ viewport.addEventListener("mousemove", function(e) {
 		var distance = Math.sqrt(dx * dx + dy * dy);
 
 		// Calculate the number of intermediate points to draw
-		var steps = Math.max(Math.abs(dx), Math.abs(dy)) * scale;
+		var steps = Math.max(Math.abs(dx), Math.abs(dy));
 
 		// Calculate the x and y increments for each intermediate point
-		var xIncrement = dx / steps;
-		var yIncrement = dy / steps;
+		var xIncrement = dx / steps / scale;
+		var yIncrement = dy / steps / scale;
 		
         var lineWidth = document.getElementById('brush-slider').value;
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			blyr.ctx.beginPath();
-			blyr.ctx.arc((prevX/scale-pansX) + xIncrement * i -blyr.x, (prevY/scale-pansY) + yIncrement * i -blyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			blyr.ctx.arc((prevX/scale-pansX) + xIncrement * i -blyr.x, (prevY/scale-pansY) + yIncrement * i -blyr.y, lineWidth / 2, 0, 2 * Math.PI);
 			blyr.ctx.fill();
 			
 			if (autoMaskEnabled) {
 				path = new Path2D();
-				path.arc((prevX/scale-pansX) + xIncrement * i -blyr.x, (prevY/scale-pansY) + yIncrement * i -blyr.y, lineWidth*scale / 2+5, 0, 2 * Math.PI);
+				path.arc((prevX/scale-pansX) + xIncrement * i -blyr.x, (prevY/scale-pansY) + yIncrement * i -blyr.y, lineWidth / 2+5, 0, 2 * Math.PI);
 				maskPath.addPath(path);
 			}
 		}
@@ -507,14 +507,14 @@ viewport.addEventListener("mousemove", function(e) {
 		var steps = Math.max(Math.abs(dx), Math.abs(dy));
 
 		// Calculate the x and y increments for each intermediate point
-		var xIncrement = dx / steps;
-		var yIncrement = dy / steps;
+		var xIncrement = dx / steps / scale;
+		var yIncrement = dy / steps / scale;
 		
         var lineWidth = document.getElementById('brush-slider').value;
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			lyrMgr.currentCtx.beginPath();
-			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth / 2, 0, 2 * Math.PI);
 			lyrMgr.currentCtx.fill();
 		}
 	} else if (masking) {
@@ -530,15 +530,15 @@ viewport.addEventListener("mousemove", function(e) {
 		var steps = Math.max(Math.abs(dx), Math.abs(dy));
 
 		// Calculate the x and y increments for each intermediate point
-		var xIncrement = dx / steps;
-		var yIncrement = dy / steps;
+		var xIncrement = dx / steps / scale;
+		var yIncrement = dy / steps / scale;
 		
         var lineWidth = document.getElementById('mask-slider').value;
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
 			mlyr.ctx.beginPath();
-			mlyr.ctx.arc((prevX/scale-pansX) + xIncrement * i -mlyr.x, (prevY/scale-pansY) + yIncrement * i -mlyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			mlyr.ctx.arc((prevX/scale-pansX) + xIncrement * i -mlyr.x, (prevY/scale-pansY) + yIncrement * i -mlyr.y, lineWidth / 2, 0, 2 * Math.PI);
 			mlyr.ctx.fill();
 		}
 	} else if (boxing) {

@@ -269,8 +269,14 @@ function draw() {
         var x = pansX + lyr.x;
         var y = pansY + lyr.y;
         if (boxing && (lyr.name === 'mask' || lyr.name === 'brush')) {
-            if (pickMouse > 0 || handleMouse === 4) x += tempX;
-			if (pickMouse > 0 || handleMouse === 1) y += tempY;
+            var trbx = tempX/scale;
+            var trby = tempY/scale
+            
+            var dx = gridSize*parseInt(trbx/gridSize) + (trbx%gridSize < gridSize/2 ? 0 : gridSize);
+            var dy = gridSize*parseInt(trby/gridSize) + (trby%gridSize < gridSize/2 ? 0 : gridSize);
+                
+            if (pickMouse > 0 || handleMouse === 4) x += dx;
+			if (pickMouse > 0 || handleMouse === 1) y += dy;
         }
 		viewportCtx.drawImage(lyr.canvas, x, y);
 		viewportCtx.globalAlpha = 1;
@@ -601,7 +607,6 @@ viewport.addEventListener("mouseup", function(e) {
             mlyr = lyrMgr.getMaskLayer();
 			mlyr.ctx.fill(maskPath);
 		} else if (boxing) {
-            //if (handleMouse === 0) {
             var trbx = tempX/scale;
             var trby = tempY/scale
             
@@ -640,7 +645,6 @@ viewport.addEventListener("mouseup", function(e) {
                     lyr.y -= dy;
                 }
             }
-            //}
 			tempX = tempY = 0;
 		} else if (moving) {
             if (!(origX===lyrMgr.currentLayer.x && origY===lyrMgr.currentLayer.y))

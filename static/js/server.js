@@ -57,8 +57,12 @@ function generate() {
     xhr.send(formData);
 }
 
+function addNewModel() {
+    msgbox('test');
+}
+
 function addModelToList(model_id) {
-  let datalist = document.getElementById("model-ids");
+  let datalist = document.getElementById("models-list");
 
   // check if the option already exists
   let options = datalist.options;
@@ -77,26 +81,26 @@ function addModelToList(model_id) {
     datalist.appendChild(newOption);
   }
   
-  document.getElementById('model-id-input').value = model_id;
+  document.getElementById('models-list').value = model_id;
 }
 
 function changeModel() {
-  var model_id = document.getElementById('model-id-input').value;
-  document.getElementById('model-id-input').value = 'please wait ...';
-  
-  var formData = new FormData();
-  
-  formData.append('model_id', model_id);
+    var model_id = document.getElementById('models-list').value;
+    document.getElementById('models-list').value = 'please wait ...';
+
+    var formData = new FormData();
+
+    formData.append('model_id', model_id);
 
     var xhr = new XMLHttpRequest();
     xhr.open("POST", 'change_model', true);
     xhr.onload = function () {
-      if (xhr.status === 200) {
-        model_id = JSON.parse(xhr.response).model_id;
-        addModelToList(model_id);
-      } else {
-        console.error('Error:', xhr);
-      }
+        if (xhr.status === 200) {
+            model_id = JSON.parse(xhr.response).model_id;
+            document.getElementById('models-list').value = model_id;
+        } else {
+            console.error('Error:', xhr);
+        }
     };
     xhr.send(formData);
 }

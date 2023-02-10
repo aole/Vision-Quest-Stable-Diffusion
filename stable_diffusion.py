@@ -10,7 +10,6 @@ cache_dir = df.utils.DIFFUSERS_CACHE
 repo_type = "model"
 
 model_id = "runwayml/stable-diffusion-v1-5"
-# model_id = "CompVis/stable-diffusion-v1-4"
 
 device = "cuda" if torch.cuda.is_available() else 'cpu'
 
@@ -50,12 +49,13 @@ def sd_get_model_id():
     
 def sd_change_model(mid):
     global model_id
+    print('please wait ...', flush=True)
     try:
         pipe = BasePipeline.from_pretrained(mid, safety_checker=None)
         model_id = mid
-        print('Success changing model to', mid)
+        print('Success changing model to', mid, flush=True)
     except:
-        print('Error changing model to', mid)
+        print('Error changing model to', mid, flush=True)
         
     return model_id
     

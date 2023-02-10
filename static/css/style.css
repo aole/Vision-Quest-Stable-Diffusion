@@ -68,6 +68,11 @@ html, body {
   flex-direction: row;
 }
 
+.list-button {
+  display: flex;
+  width: 100%;
+}
+
 #prompt, #negative, #generate, #layers-list {
 	width: 100%;
 }
@@ -79,7 +84,7 @@ html, body {
 	color: white;
 }
 
-#model_id {
+#models-list {
 	width: 100%;
 }
 

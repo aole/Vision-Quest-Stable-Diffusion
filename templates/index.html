@@ -37,13 +37,14 @@
 			<label id="batch-label">4</label>
 		</div>
 		<hr>
-        <input list="model-ids" id="model-id-input" value={{ model_id }} size=4 onchange="changeModel()">
-        <datalist id="model-ids">
-            <option value=""></option>
-            {% for id in model_ids %}
-                <option value="{{ id }}">
-            {% endfor %}
-        </datalist>
+        <div class="list-button">
+            <select id="models-list" onchange="changeModel()">
+                {% for model in models %}
+                    <option value="{{ model }}" {% if model == model_sel %}selected{% endif %}>{{ model }}</option>
+                {% endfor %}
+            </select>
+            <div class="toolbar-button" onclick="addNewModel()"><i class="fas fa-plus"></i></div>
+        </div>
 	  </div>
 	  <div class="center" id="center-panel">
 		<div class="toolbar vertical">

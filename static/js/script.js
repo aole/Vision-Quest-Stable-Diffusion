@@ -161,10 +161,7 @@ function updateRenderImage(url, batch_size) {
 		lyrMgr.addRenderLayer(url+i+'.png');
 	}
 
-	// clear out mask and brush layers
-	var lyr = lyrMgr.findLayerByName('mask');
-	// lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
-	var lyr = lyrMgr.findLayerByName('brush');
+	var lyr = lyrMgr.getBrushLayer();
 	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
 }
 
@@ -216,7 +213,7 @@ function generateModelImage() {
 }
 
 function generateMaskImage() {
-	var masklyr = lyrMgr.findLayerByName('mask');
+	var masklyr = lyrMgr.getMaskLayer();
 	const pixelBuffer = new Uint32Array(masklyr.ctx.getImageData(0, 0, masklyr.canvas.width, masklyr.canvas.height).data.buffer);
 	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
 		return 0;
@@ -414,16 +411,19 @@ viewport.addEventListener("mousedown", function(e) {
         panning = true;
     } else if (e.button === 0 && currentTool === 'brush') {
 		drawing = true;
+        // use brush layer only
+        blyr = lyrMgr.getBrushLayer();
+        
         var lineWidth = document.getElementById('brush-slider').value;
-        lyrMgr.currentCtx.fillStyle = brushColor;
-		lyrMgr.currentCtx.globalCompositeOperation = "source-over";
-		lyrMgr.currentCtx.beginPath();
-		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-		lyrMgr.currentCtx.fill();
+        blyr.ctx.fillStyle = brushColor;
+		blyr.ctx.globalCompositeOperation = "source-over";
+		blyr.ctx.beginPath();
+		blyr.ctx.arc((prevX/scale-pansX) -blyr.x, (prevY/scale-pansY) -blyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		blyr.ctx.fill();
 		
 		if (autoMaskEnabled) {
 			maskPath = new Path2D();
-			maskPath.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
+			maskPath.arc((prevX/scale-pansX) -blyr.x, (prevY/scale-pansY) -blyr.y, lineWidth*scale / 2+5*scale, 0, 2 * Math.PI);
 		}
 	} else if (e.button === 0 && currentTool === 'eraser') {
 		erasing = true;
@@ -434,12 +434,15 @@ viewport.addEventListener("mousedown", function(e) {
 		lyrMgr.currentCtx.fill();
 	} else if (e.button === 0 && currentTool === 'mask') {
 		masking = true;
+        // use mask layer only
+        mlyr = lyrMgr.getMaskLayer();
+        
         var lineWidth = document.getElementById('mask-slider').value;
-        lyrMgr.currentCtx.fillStyle = maskColor;
-		lyrMgr.currentCtx.globalCompositeOperation = "source-over";
-		lyrMgr.currentCtx.beginPath();
-		lyrMgr.currentCtx.arc((prevX/scale-pansX) -lyrMgr.currentLayer.x, (prevY/scale-pansY) -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-		lyrMgr.currentCtx.fill();
+        mlyr.ctx.fillStyle = maskColor;
+		mlyr.ctx.globalCompositeOperation = "source-over";
+		mlyr.ctx.beginPath();
+		mlyr.ctx.arc((prevX/scale-pansX) -mlyr.x, (prevY/scale-pansY) -mlyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+		mlyr.ctx.fill();
 	} else if ((pickMouse > 0 || handleMouse > 0) && currentTool === 'move') {
 		boxing = true;
 	} else if (e.button === 0 && currentTool === 'move' && (lyrMgr.currentLayer.name != 'brush' && lyrMgr.currentLayer.name != 'mask')) {
@@ -465,6 +468,9 @@ viewport.addEventListener("mousemove", function(e) {
         panX += x - prevX;
         panY += y - prevY;
     } else if (drawing) {
+        // use brush layer only
+        blyr = lyrMgr.getBrushLayer();
+        
 		// Calculate the distance between the current and previous cursor positions
 		var dx = x - prevX;
 		var dy = y - prevY;
@@ -481,13 +487,13 @@ viewport.addEventListener("mousemove", function(e) {
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			lyrMgr.currentCtx.beginPath();
-			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-			lyrMgr.currentCtx.fill();
+			blyr.ctx.beginPath();
+			blyr.ctx.arc((prevX/scale-pansX) + xIncrement * i -blyr.x, (prevY/scale-pansY) + yIncrement * i -blyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			blyr.ctx.fill();
 			
 			if (autoMaskEnabled) {
 				path = new Path2D();
-				path.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2+5, 0, 2 * Math.PI);
+				path.arc((prevX/scale-pansX) + xIncrement * i -blyr.x, (prevY/scale-pansY) + yIncrement * i -blyr.y, lineWidth*scale / 2+5, 0, 2 * Math.PI);
 				maskPath.addPath(path);
 			}
 		}
@@ -512,6 +518,9 @@ viewport.addEventListener("mousemove", function(e) {
 			lyrMgr.currentCtx.fill();
 		}
 	} else if (masking) {
+        // use mask layer only
+        mlyr = lyrMgr.getMaskLayer();
+        
 		// Calculate the distance between the current and previous cursor positions
 		var dx = x - prevX;
 		var dy = y - prevY;
@@ -528,9 +537,9 @@ viewport.addEventListener("mousemove", function(e) {
 		// drawCtx.globalCompositeOperation = "source-over";
 		// Draw a line between the current and previous cursor positions
 		for (var i = 0; i < steps; i++) {
-			lyrMgr.currentCtx.beginPath();
-			lyrMgr.currentCtx.arc((prevX/scale-pansX) + xIncrement * i -lyrMgr.currentLayer.x, (prevY/scale-pansY) + yIncrement * i -lyrMgr.currentLayer.y, lineWidth*scale / 2, 0, 2 * Math.PI);
-			lyrMgr.currentCtx.fill();
+			mlyr.ctx.beginPath();
+			mlyr.ctx.arc((prevX/scale-pansX) + xIncrement * i -mlyr.x, (prevY/scale-pansY) + yIncrement * i -mlyr.y, lineWidth*scale / 2, 0, 2 * Math.PI);
+			mlyr.ctx.fill();
 		}
 	} else if (boxing) {
 		// move the render box
@@ -589,8 +598,8 @@ viewport.addEventListener("mouseup", function(e) {
     // Check if left mouse button was released
     if (e.button === 0) {
 		if (drawing && autoMaskEnabled) {
-			var lyr = lyrMgr.findLayerByName('mask');
-			lyr.ctx.fill(maskPath);
+            mlyr = lyrMgr.getMaskLayer();
+			mlyr.ctx.fill(maskPath);
 		} else if (boxing) {
             //if (handleMouse === 0) {
             var trbx = tempX/scale;

@@ -11,7 +11,7 @@ class LayerManager {
         
         // Set up image for drawing
         this.drawCanvas = new OffscreenCanvas(w, h);
-        this.currentLayer = this.addLayer(this.drawCanvas, "brush", -1, false);
+        this.brushLayer = this.currentLayer = this.addLayer(this.drawCanvas, "brush", -1, false);
         this.currentCanvas = this.drawCanvas;
         this.currentCtx = this.currentLayer.ctx;
 
@@ -21,6 +21,9 @@ class LayerManager {
         this.maskCanvas.height = renderBoxHeight;
         this.maskLayer = this.addLayer(this.maskCanvas, "mask");
     }
+    
+    getBrushLayer() { return this.brushLayer; }
+    getMaskLayer() { return this.maskLayer; }
     
     addLayer(canvas, name, position=-1, refresh=true) {
         var ctx = canvas.getContext('2d');

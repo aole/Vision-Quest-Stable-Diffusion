@@ -11,7 +11,6 @@ class LayerManager {
         
         // Set up image for drawing
         this.drawCanvas = new OffscreenCanvas(w, h);
-        this.drawCanvas.getContext('2d').fillStyle = brushColor;
         this.currentLayer = this.addLayer(this.drawCanvas, "brush", -1, false);
         this.currentCanvas = this.drawCanvas;
         this.currentCtx = this.currentLayer.ctx;
@@ -20,7 +19,6 @@ class LayerManager {
         this.maskCanvas = document.createElement('canvas');
         this.maskCanvas.width = renderBoxWidth;
         this.maskCanvas.height = renderBoxHeight;
-        this.maskCanvas.getContext('2d').fillStyle = maskColor;
         this.maskLayer = this.addLayer(this.maskCanvas, "mask");
     }
     
@@ -154,6 +152,19 @@ class LayerManager {
         } else {
             this.deleteLayer()
         }
+    }
+    
+    resizeLayerBy(lyr, dw, dh) {
+        if (lyr.canvas.width+dw <= 0 || lyr.canvas.height+dh <= 0) return;
+        // backup drawing
+        var drawing = lyr.ctx.getImageData(0, 0, lyr.canvas.width, lyr.canvas.height);
+        
+        lyr.canvas.width += dw;
+        lyr.canvas.height += dh;
+        
+        // restrore drawing
+        lyr.canvas.ctx = lyr.canvas.getContext('2d');
+        lyr.canvas.ctx.putImageData(drawing, 0, 0);
     }
 
     moveLayerUp() {

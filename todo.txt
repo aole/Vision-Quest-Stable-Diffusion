@@ -37,4 +37,5 @@ Todo (in no particular order)
 38. layer opacity
 39. cut, copy, paste using mask
 40. tooltips
-41. 
+41. option to use inpainting models
+42. 

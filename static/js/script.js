@@ -223,7 +223,7 @@ function generateMaskImage() {
 	if (!pixelBuffer.some(color => color !== 0)) // if all pixels are transparent
 		return 0;
 		
-	var dataURL = maskCanvas.toDataURL();
+	var dataURL = masklyr.canvas.toDataURL();
 	return dataURL;
 }
 

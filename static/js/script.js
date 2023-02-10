@@ -681,3 +681,4 @@ function clearLayer() { lyrMgr.clearLayer(); draw(); }
 function combineLayers() { lyrMgr.combineLayers(); draw(); }
 function moveLayerDown() { lyrMgr.moveLayerDown(); draw(); }
 function moveLayerUp() { lyrMgr.moveLayerUp(); draw(); }
+function toggleVisible() { lyrMgr.toggleVisible(); draw(); }

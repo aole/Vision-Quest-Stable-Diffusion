@@ -25,14 +25,16 @@ Todo (in no particular order)
 25. alt-wheel up to select layer above and set it to visible?
 26. alt-x to delete current layer?
 27. "Modify" button to run pix2pix model on the current image.
-28. paint with opacity.
+28. change brush opacity.
 29. brush shapes.
 30. brush textures.
 31. transform layer.
-32. scale image/layer. use model?
+32. scale image/layer. use model? stabilityai/sd-x2-latent-upscaler
 33. clone tool.
 34. add a close up clause to generate zoomed-in the masked area.
 35. schedulers
 36. select multiple layer. how would different operations work?
 37. optional layers. only one of these layers is visible at a time. When new rendering is done, all previous optional layers are converted to normal layers.
-38. 
+38. layer opacity
+39. cut, copy, paste using mask
+40. 

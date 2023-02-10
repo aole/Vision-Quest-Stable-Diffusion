@@ -38,6 +38,37 @@ class LayerManager {
         return lyr;
     }
     
+    createLayerName(prefix) {
+        var num = 1;
+        for(var lyr of this.layers) {
+            if (lyr.name.substring(0, prefix.length) === prefix) {
+                var lnum = parseInt(lyr.name.substring(prefix.length));
+                if (lnum>=num) num = lnum+1;
+            }
+        }
+        return prefix+num;
+    }
+
+    findLayerIndex(lyr) {
+        return this.layers.findIndex((e) => e === lyr);
+    }
+    
+    duplicateLayer() { // duplicate current layer
+        var lyr = this.currentLayer;
+        if (lyr.name === 'brush' || lyr.name === 'mask') return;
+        
+        var idx = this.findLayerIndex(lyr);
+        var canvas = new OffscreenCanvas(lyr.canvas.width, lyr.canvas.height);
+        var name = this.createLayerName('copy of '+lyr.name);
+        var newlyr = this.addLayer(canvas, name, idx+1, false);
+        newlyr.ctx.drawImage(lyr.canvas, 0, 0);
+        newlyr.x = lyr.x;
+        newlyr.y = lyr.y;
+        
+        this.selectLayer(name);
+        this.refreshLayerControl();
+    }
+    
     findLayerByName(name) {
         return this.layers.find((e) => e.name===name);
     }
@@ -76,17 +107,6 @@ class LayerManager {
         this.layerCtrl.selectedIndex = selectidx;
     }
     
-    createLayerName(prefix) {
-        var num = 1;
-        for(var lyr of this.layers) {
-            if (lyr.name.substring(0, prefix.length) === prefix) {
-                var lnum = parseInt(lyr.name.substring(prefix.length));
-                if (lnum>=num) num = lnum+1;
-            }
-        }
-        return prefix+num;
-    }
-
     addRenderLayer(path) {
         var img = new Image();
         img.src = path;
@@ -194,8 +214,10 @@ class LayerManager {
     getLayerAtLocation(x, y) {
         for(var i=this.layers.length-3; i>=0; i--) {
             var lyr = this.layers[i];
-            if (x>=lyr.x && y>=lyr.y && x<=lyr.x+lyr.canvas.width && y<=lyr.y+lyr.canvas.height)
+            if (lyr.name === 'mask' || lyr.name === 'brush' || !lyr.visible) continue;
+            if (x>=lyr.x && y>=lyr.y && x<=lyr.x+lyr.canvas.width && y<=lyr.y+lyr.canvas.height) {
                 return lyr;
+            }
         }
         return null;
     }
@@ -204,8 +226,7 @@ class LayerManager {
         modelCtx.globalCompositeOperation = "source-over"
         modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
         for (let lyr of this.layers) {
-            if (lyr.name === 'mask' || !lyr.visible)
-                continue;
+            if (lyr.name === 'mask' || !lyr.visible) continue;
             modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
         }
         var dataURL = modelCanvas.toDataURL();

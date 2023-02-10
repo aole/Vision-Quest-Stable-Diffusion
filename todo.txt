@@ -38,4 +38,5 @@ Todo (in no particular order)
 39. cut, copy, paste using mask
 40. tooltips
 41. option to use inpainting models
-42. 
+42. create/use Layer class
+44. 

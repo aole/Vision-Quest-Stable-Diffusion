@@ -398,7 +398,7 @@ viewport.addEventListener("mousedown", function(e) {
     
     if (e.button===0 && ctrlDown && currentTool=='move') {
         var x = (prevX-panX) / scale;
-        var y = (prevX-panY) / scale;
+        var y = (prevY-panY) / scale;
         var lyr = lyrMgr.getLayerAtLocation(x, y);
         if (lyr) lyrMgr.selectLayer(lyr.name);
     }
@@ -749,3 +749,4 @@ function moveLayerDown() { lyrMgr.moveLayerDown(); draw(); }
 function moveLayerUp() { lyrMgr.moveLayerUp(); draw(); }
 function toggleVisible() { lyrMgr.toggleVisible(); draw(); }
 function saveImage() { lyrMgr.saveImage(); }
+function duplicateLayer() { lyrMgr.duplicateLayer(); }

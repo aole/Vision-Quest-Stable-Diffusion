@@ -180,7 +180,7 @@ function generateModelImage() {
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
 	for (let lyr of lyrMgr.layers) {
-		if (lyr.name === 'mask')
+		if (lyr.name === 'mask' || !lyr.visible)
 			continue;
 		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
 	}
@@ -682,3 +682,4 @@ function combineLayers() { lyrMgr.combineLayers(); draw(); }
 function moveLayerDown() { lyrMgr.moveLayerDown(); draw(); }
 function moveLayerUp() { lyrMgr.moveLayerUp(); draw(); }
 function toggleVisible() { lyrMgr.toggleVisible(); draw(); }
+function saveImage() { lyrMgr.saveImage(); }

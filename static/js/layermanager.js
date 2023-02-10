@@ -185,4 +185,29 @@ class LayerManager {
         }
         return null;
     }
+    
+    saveImage() {
+        modelCtx.globalCompositeOperation = "source-over"
+        modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
+        for (let lyr of this.layers) {
+            if (lyr.name === 'mask' || !lyr.visible)
+                continue;
+            modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
+        }
+        var dataURL = modelCanvas.toDataURL();
+        
+        var formData = new FormData();
+        formData.append('image', dataURL);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", 'save_image', true);
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+              console.log('Image saved!');
+          } else {
+            console.error('Error:', xhr);
+          }
+        };
+        xhr.send(formData);
+    }
 }

@@ -4,6 +4,7 @@ import time, base64
 from PIL import Image, ImageFilter
 from io import BytesIO
 import numpy as np
+import datetime
 
 
 views = Blueprint(__name__, "views")
@@ -100,3 +101,13 @@ def change_model():
   mid = request.form.get('model_id')
   mid = sd_change_model(mid)
   return jsonify({'model_id':mid})
+
+@views.route('/save_image', methods=['POST'])
+def save_image():
+  _, img_data = request.form.get('image').split(',')
+  image = Image.open(BytesIO(base64.b64decode(img_data)))
+  
+  current_time = datetime.datetime.now()
+  image.save('static/saves/image'+current_time.strftime("%Y%m%d_%H%M%S")+'.png')
+  
+  return 'Success'

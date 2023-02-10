@@ -2,10 +2,9 @@ Todo (in no particular order)
 ====
 1. change brush width using keyboard shortcut and mouse drag.
 2. color picker on key press.
-4. folders in layer list.
+4. folders in layer list. use case?
 5. status bar with information/tips about current operation.
 6. model dropdown list to display all modes without the need of removing text from the textbox.
-8. save image from the canvas.
 9. ctrl-drag layers to snap to grid.
 10. Feature documentation.
 11. Gif using some of the features.

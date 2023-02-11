@@ -39,4 +39,5 @@ Todo (in no particular order)
 40. tooltips
 41. option to use inpainting models
 42. create/use Layer class
-44. 
+45. tool - fill
+46. 

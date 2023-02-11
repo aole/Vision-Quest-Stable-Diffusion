@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, Response, jsonify
-from stable_diffusion import sd_generate, sd_get_model_id, sd_change_model, sd_get_cached_models_list
+from stable_diffusion import sd_generate, sd_generate_out, sd_get_model_id, sd_change_model, sd_get_cached_models_list
 import time, base64
 from PIL import Image, ImageFilter
 from io import BytesIO
@@ -91,6 +91,38 @@ def inpainting():
 
     mask = mask.convert("RGB")
     images = sd_generate(image=orig, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
+
+    for i, img in enumerate(images):
+        img.paste(orig, (0,0), pastemask)
+        img.save(f'static/images/image{i}.png')
+
+    return jsonify({'url':'/static/images/image', 'count': len(images)})
+
+@views.route('/outpainting', methods=['POST'])
+def outpainting():
+    prompt = request.form.get('prompt')
+    negative = request.form.get('negative')
+    num_steps = int(request.form.get('numSteps'))
+    guidance = float(request.form.get('guidance'))
+    batch_size = int(request.form.get('batch_size'))
+    noise = float(request.form.get('noise'))/100 # converting user scale of 0-100 to model scale of 0-1.
+    _, img_data = request.form.get('image').split(',')
+    _, mask_data = request.form.get('mask').split(',')
+
+    orig = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
+    mask = Image.open(BytesIO(base64.b64decode(mask_data)))
+
+    mask = mask.filter(ImageFilter.MaxFilter(9))
+
+    npimg = np.array(mask)
+    trans_mask = (npimg[:,:,3] == 0)
+    npimg[trans_mask] = [0, 0, 0, 255]
+    npimg[np.logical_not(trans_mask)] = [0,0,0,0]
+    pastemask = Image.fromarray(npimg)
+    pastemask = pastemask.filter(ImageFilter.BoxBlur(2))
+
+    mask = mask.convert("RGB")
+    images = sd_generate_out(image=orig, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size)
 
     for i, img in enumerate(images):
         img.paste(orig, (0,0), pastemask)

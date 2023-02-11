@@ -163,6 +163,8 @@ function updateRenderImage(url, batch_size) {
 
 	var lyr = lyrMgr.getBrushLayer();
 	lyr.ctx.clearRect(0, 0, lyr.canvas.width, lyr.canvas.height);
+	
+	draw();
 }
 
 // Set up image for rendering

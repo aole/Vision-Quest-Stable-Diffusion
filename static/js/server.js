@@ -33,7 +33,7 @@ function generate() {
 		const noise = document.getElementById('noise-slider').value;
 		formData.append('noise', noise);
 	} else if (cimg[0]==='SOMETRANS') {
-		mode = 'inpainting';
+		mode = 'outpainting';
 		var img = cimg[1];
 		var mask = cimg[2];
 		

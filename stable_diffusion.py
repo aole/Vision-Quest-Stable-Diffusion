@@ -3,6 +3,8 @@
 from pipelines.basepipeline import BasePipeline
 
 import diffusers as df
+from diffusers import StableDiffusionInpaintPipeline
+
 import torch
 import os
 
@@ -28,11 +30,11 @@ def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7
     
     if device == 'cpu':
         pipe = BasePipeline.from_pretrained(
-            'runwayml/stable-diffusion-v1-5',
+            model_id,
         )
     else:
         pipe = BasePipeline.from_pretrained(
-            'runwayml/stable-diffusion-v1-5',
+            model_id,
             torch_dtype=torch.float16,
             revision="fp16",
         )
@@ -41,6 +43,28 @@ def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7
     pipe = pipe.to(device)
     
     images = pipe(prompt=prompt, image=image, mask=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative, strength=noise, batch_size=batch_size)
+    
+    return images
+    
+def sd_generate_out(prompt, image, mask, negative='', steps=20, guidance=7.5, batch_size=1):
+    model_id_inp = 'runwayml/stable-diffusion-inpainting'
+    print(f'generate out ({model_id_inp}) {prompt}')
+    
+    if device == 'cpu':
+        pipe = StableDiffusionInpaintPipeline.from_pretrained(
+            model_id_inp,
+        )
+    else:
+        pipe = StableDiffusionInpaintPipeline.from_pretrained(
+            model_id_inp,
+            torch_dtype=torch.float16,
+            revision="fp16",
+        )
+        pipe.enable_xformers_memory_efficient_attention()
+
+    pipe = pipe.to(device)
+    
+    images = pipe(prompt=prompt, image=image, mask_image=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative, num_images_per_prompt=batch_size).images
     
     return images
     

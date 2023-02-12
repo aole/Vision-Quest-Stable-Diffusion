@@ -117,9 +117,6 @@ def outpainting():
     orig = Image.open(BytesIO(base64.b64decode(img_data)))
     mask = Image.open(BytesIO(base64.b64decode(mask_data)))
 
-    orig.save('temp/image.png')
-    mask.save('temp/mask.png')
-    
     mask = mask.filter(ImageFilter.MaxFilter(9))
 
     npimg = np.array(mask)

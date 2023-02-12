@@ -2,6 +2,7 @@
 Web based local AI painting program
 
 ![screenshot](/docs/images/screenshot.jpg "Vision Quest Screenshot")
+![progress-shots](/docs/images/progress.jpg "Vision Quest Progress Shots")
 
 Uses Stable Diffusion models to generate images from prompts.
 

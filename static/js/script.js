@@ -729,8 +729,9 @@ document.addEventListener('keyup', function(e) {
 	if (e.key === ' ') {
 		spacebarDown = false;
 	} else if (e.key === 'h') {
+		var maskLayer = lyrMgr.getMaskLayer();
 		maskLayer.visible = !maskLayer.visible;
-		refreshLayerControl();
+		lyrMgr.refreshLayerControl();
 		draw();
     }
 });

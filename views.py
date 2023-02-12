@@ -31,6 +31,20 @@ def testfn():
 
     return 'Success!'
 
+def save_renders(images, orig=None, mask=None):
+    print(f'Num images generated: {len(images)}', flush=True)
+    
+    current_time = datetime.datetime.now()
+    files = []
+    for i, image in enumerate(images):
+        name = 'static/images/tmp'+current_time.strftime("%Y%m%d_%H%M%S")+str(i)+'.png'
+        files.append(name)
+        
+        if orig and mask: image.paste(orig, (0, 0), mask)
+        image.save(name)
+    
+    return files
+
 @views.route('/txt2img', methods=['POST'])
 def txt2img():
     prompt = request.form.get('prompt')
@@ -40,11 +54,9 @@ def txt2img():
     batch_size = int(request.form.get('batch_size'))
 
     images = sd_generate(prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size);
-    print(f'Num images generated: {len(images)}', flush=True)
-    for i, img in enumerate(images):
-        img.save(f'static/images/image{i}.png')
-
-    return jsonify({'url':'/static/images/image', 'count': len(images)})
+    files = save_renders(images)
+    
+    return jsonify({'urls':files, 'count': len(files)})
 
 @views.route('/img2img', methods=['POST'])
 def img2img():
@@ -59,12 +71,9 @@ def img2img():
     img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
 
     images = sd_generate(image=img, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
-    print(f'Num images generated: {len(images)}', flush=True)
-
-    for i, img in enumerate(images):
-        img.save(f'static/images/image{i}.png')
-
-    return jsonify({'url':'/static/images/image', 'count': len(images)})
+    files = save_renders(images)
+    
+    return jsonify({'urls':files, 'count': len(files)})
 
 @views.route('/inpainting', methods=['POST'])
 def inpainting():
@@ -91,12 +100,9 @@ def inpainting():
 
     mask = mask.convert("RGB")
     images = sd_generate(image=orig, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
-
-    for i, img in enumerate(images):
-        img.paste(orig, (0,0), pastemask)
-        img.save(f'static/images/image{i}.png')
-
-    return jsonify({'url':'/static/images/image', 'count': len(images)})
+    files = save_renders(images, orig, pastemask)
+    
+    return jsonify({'urls':files, 'count': len(files)})
 
 @views.route('/outpainting', methods=['POST'])
 def outpainting():
@@ -105,13 +111,15 @@ def outpainting():
     num_steps = int(request.form.get('numSteps'))
     guidance = float(request.form.get('guidance'))
     batch_size = int(request.form.get('batch_size'))
-    noise = float(request.form.get('noise'))/100 # converting user scale of 0-100 to model scale of 0-1.
     _, img_data = request.form.get('image').split(',')
     _, mask_data = request.form.get('mask').split(',')
 
-    orig = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
+    orig = Image.open(BytesIO(base64.b64decode(img_data)))
     mask = Image.open(BytesIO(base64.b64decode(mask_data)))
 
+    orig.save('temp/image.png')
+    mask.save('temp/mask.png')
+    
     mask = mask.filter(ImageFilter.MaxFilter(9))
 
     npimg = np.array(mask)
@@ -122,13 +130,10 @@ def outpainting():
     pastemask = pastemask.filter(ImageFilter.BoxBlur(2))
 
     mask = mask.convert("RGB")
-    images = sd_generate_out(image=orig, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size)
-
-    for i, img in enumerate(images):
-        img.paste(orig, (0,0), pastemask)
-        img.save(f'static/images/image{i}.png')
-
-    return jsonify({'url':'/static/images/image', 'count': len(images)})
+    images = sd_generate_out(image=orig.convert("RGB"), mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size)
+    files = save_renders(images, orig, pastemask)
+    
+    return jsonify({'urls':files, 'count': len(files)})
 
 @views.route('/change_model', methods=['POST'])
 def change_model():

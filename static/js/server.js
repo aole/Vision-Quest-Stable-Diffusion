@@ -39,7 +39,6 @@ function generate() {
 		
 		formData.append('image', img);
 		formData.append('mask', mask);
-		formData.append('noise', '100');
 	}
 
     var xhr = new XMLHttpRequest();
@@ -48,8 +47,8 @@ function generate() {
       if (xhr.status === 200) {
 		var res = JSON.parse(xhr.response)
 		var batch_size = res.count;
-        var url = res.url;
-        updateRenderImage(url, batch_size);
+        var urls = res.urls;
+        imagesRendered(urls, batch_size);
       } else {
         console.error('Error:', xhr);
       }

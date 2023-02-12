@@ -155,10 +155,10 @@ function setCurrentTool(tool) {
 		autoMaskEnabled = false;
 }
 
-function updateRenderImage(url, batch_size) {
+function imagesRendered(urls, batch_size) {
 	// Create a new image object and set its src property
 	for (var i=0; i<batch_size; i++) {
-		lyrMgr.addRenderLayer(url+i+'.png');
+		lyrMgr.addRenderLayer(urls[i]);
 	}
 
 	var lyr = lyrMgr.getBrushLayer();

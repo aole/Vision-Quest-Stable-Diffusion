@@ -85,6 +85,8 @@ function addModelToList(model_id) {
 
 function changeModel() {
     var model_id = document.getElementById('models-list').value;
+	
+	// TODO
     document.getElementById('models-list').value = 'please wait ...';
 
     var formData = new FormData();
@@ -97,6 +99,26 @@ function changeModel() {
         if (xhr.status === 200) {
             model_id = JSON.parse(xhr.response).model_id;
             document.getElementById('models-list').value = model_id;
+        } else {
+            console.error('Error:', xhr);
+        }
+    };
+    xhr.send(formData);
+}
+
+function changeScheduler() {
+    var scheduler = document.getElementById('scheduler-list').value;
+	
+    var formData = new FormData();
+
+    formData.append('scheduler', scheduler);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", 'change_scheduler', true);
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            scheduler = JSON.parse(xhr.response).scheduler;
+            document.getElementById('scheduler-list').value = scheduler;
         } else {
             console.error('Error:', xhr);
         }

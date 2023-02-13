@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, Response, jsonify
-from stable_diffusion import sd_generate, sd_generate_out, sd_get_model_id, sd_change_model, sd_get_cached_models_list
+from stable_diffusion import sd_generate, sd_generate_out, sd_get_model_id, sd_change_model, sd_change_scheduler, sd_get_cached_models_list, scheduler_names, scheduler_sel
 import time, base64
 from PIL import Image, ImageFilter
 from io import BytesIO
@@ -18,7 +18,7 @@ def index():
     model_sel=sd_get_model_id()
     models=sd_get_cached_models_list()
     
-    return render_template('index.html', model_sel=model_sel, models=models, cache_busting_param=cache_busting_param)
+    return render_template('index.html', model_sel=model_sel, models=models, scheduler_sel=scheduler_sel, schedulers=scheduler_names, cache_busting_param=cache_busting_param)
 
 @views.route('/test', methods=['POST'])
 def testfn():
@@ -138,6 +138,13 @@ def change_model():
     mid = sd_change_model(mid)
     
     return jsonify({'model_id':mid})
+
+@views.route('/change_scheduler', methods=['POST'])
+def change_scheduler():
+    scheduler = request.form.get('scheduler')
+    scheduler = sd_change_scheduler(scheduler)
+    
+    return jsonify({'scheduler': scheduler})
 
 @views.route('/save_image', methods=['POST'])
 def save_image():

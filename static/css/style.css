@@ -175,6 +175,9 @@ canvas {
 }
 
 #model-id-input {
-    width: 100%
+    width: 100%;
 }
 
+#scheduler-list {
+	width: 100%;
+}

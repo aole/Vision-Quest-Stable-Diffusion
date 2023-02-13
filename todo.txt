@@ -15,7 +15,6 @@ Todo (in no particular order)
 16. draw shapes (rectangle, circles ...)
 17. mask using segmentation models.
 18. convert mask to brush layer and vice-versa.
-19. change render box size.
 20. tool - clear outside mask, clear inside mask.
 21. add noise tool.
 22. tool - color to mask with threshold.
@@ -31,7 +30,6 @@ Todo (in no particular order)
 32. scale image/layer. use model? stabilityai/sd-x2-latent-upscaler
 33. clone tool.
 34. add a close up clause to generate zoomed-in the masked area.
-35. schedulers
 36. select multiple layer. how would different operations work?
 37. optional layers? only one of these layers is visible at a time. When new rendering is done, all previous optional layers are converted to normal layers.
 38. layer opacity

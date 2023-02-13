@@ -49,11 +49,13 @@ def save_renders(images, orig=None, mask=None):
 def txt2img():
     prompt = request.form.get('prompt')
     negative = request.form.get('negative')
+    width = int(request.form.get('width'))
+    height = int(request.form.get('height'))
     num_steps = int(request.form.get('numSteps'))
     guidance = float(request.form.get('guidance'))
     batch_size = int(request.form.get('batch_size'))
 
-    images = sd_generate(prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size);
+    images = sd_generate(prompt=prompt, negative=negative, width=width, height=height, steps=num_steps, guidance=guidance, batch_size=batch_size);
     files = save_renders(images)
     
     return jsonify({'urls':files, 'count': len(files)})
@@ -62,6 +64,8 @@ def txt2img():
 def img2img():
     prompt = request.form.get('prompt')
     negative = request.form.get('negative')
+    width = int(request.form.get('width'))
+    height = int(request.form.get('height'))
     num_steps = int(request.form.get('numSteps'))
     guidance = float(request.form.get('guidance'))
     batch_size = int(request.form.get('batch_size'))
@@ -70,7 +74,7 @@ def img2img():
 
     img = Image.open(BytesIO(base64.b64decode(img_data))).convert("RGB")
 
-    images = sd_generate(image=img, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
+    images = sd_generate(image=img, prompt=prompt, negative=negative, width=width, height=height, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
     files = save_renders(images)
     
     return jsonify({'urls':files, 'count': len(files)})
@@ -79,6 +83,8 @@ def img2img():
 def inpainting():
     prompt = request.form.get('prompt')
     negative = request.form.get('negative')
+    width = int(request.form.get('width'))
+    height = int(request.form.get('height'))
     num_steps = int(request.form.get('numSteps'))
     guidance = float(request.form.get('guidance'))
     batch_size = int(request.form.get('batch_size'))
@@ -99,7 +105,7 @@ def inpainting():
     pastemask = pastemask.filter(ImageFilter.BoxBlur(2))
 
     mask = mask.convert("RGB")
-    images = sd_generate(image=orig, mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
+    images = sd_generate(image=orig, mask=mask, prompt=prompt, negative=negative, width=width, height=height, steps=num_steps, guidance=guidance, noise=noise, batch_size=batch_size)
     files = save_renders(images, orig, pastemask)
     
     return jsonify({'urls':files, 'count': len(files)})
@@ -108,6 +114,8 @@ def inpainting():
 def outpainting():
     prompt = request.form.get('prompt')
     negative = request.form.get('negative')
+    width = int(request.form.get('width'))
+    height = int(request.form.get('height'))
     num_steps = int(request.form.get('numSteps'))
     guidance = float(request.form.get('guidance'))
     batch_size = int(request.form.get('batch_size'))
@@ -127,7 +135,7 @@ def outpainting():
     pastemask = pastemask.filter(ImageFilter.BoxBlur(2))
 
     mask = mask.convert("RGB")
-    images = sd_generate_out(image=orig.convert("RGB"), mask=mask, prompt=prompt, negative=negative, steps=num_steps, guidance=guidance, batch_size=batch_size)
+    images = sd_generate_out(image=orig.convert("RGB"), mask=mask, prompt=prompt, negative=negative, width=width, height=height, steps=num_steps, guidance=guidance, batch_size=batch_size)
     files = save_renders(images, orig, pastemask)
     
     return jsonify({'urls':files, 'count': len(files)})

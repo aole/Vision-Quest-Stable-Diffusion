@@ -13,6 +13,8 @@ function generate() {
 
 	formData.append('prompt', prompt_);
 	formData.append('negative', negative);
+	formData.append('width', renderBoxWidth);
+	formData.append('height', renderBoxHeight);
 	formData.append('numSteps', numSteps);
 	formData.append('guidance', guidance);
 	formData.append('batch_size', batch_size);

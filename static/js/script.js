@@ -174,6 +174,8 @@ modelCanvas.height = renderBoxHeight;
 var modelCtx = modelCanvas.getContext('2d', {willReadFrequently: true});
 
 function generateModelImage() {
+	modelCanvas.width = renderBoxWidth
+	modelCanvas.height = renderBoxHeight
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
 	for (let lyr of lyrMgr.layers) {

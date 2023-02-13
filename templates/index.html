@@ -13,7 +13,7 @@
 	  <div class="left">
 		<h1>Vision Quest</h1>
 		<textarea id="prompt" rows=8 placeholder="Enter prompt...">a beautiful country side house, lake, mountains, trees</textarea>
-		<textarea id="negative" rows=8 placeholder="Enter negagive prompt...">(blurry)), duplicate, child, childish</textarea>
+		<textarea id="negative" rows=8 placeholder="Enter negagive prompt...">((blurry)), duplicate, child, childish, text, label, sign, watermark</textarea>
 		<input type="button" id="generate" value="Generate" onclick="generate()"></input>
 		<HR>
 		<div class="container-slider">
@@ -45,6 +45,11 @@
             </select>
             <div class="toolbar-button" onclick="addNewModel()"><i class="fas fa-plus"></i></div>
         </div>
+		<select id="scheduler-list" onchange="changeScheduler()">
+			{% for scheduler in schedulers %}
+				<option value="{{ scheduler }}" {% if scheduler == scheduler_sel %}selected{% endif %}>{{ scheduler }}</option>
+			{% endfor %}
+		</select>
 	  </div>
 	  <div class="center" id="center-panel">
 		<div class="toolbar vertical">

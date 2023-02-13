@@ -15,6 +15,17 @@ model_id = "runwayml/stable-diffusion-v1-5"
 
 device = "cuda" if torch.cuda.is_available() else 'cpu'
 
+scheduler_sel = 'Euler A'
+scheduler_names = ['Euler', 'Euler A', 'DDIM', 'DDPM', 'DPM Solver', 'LMS', 'PNDM']
+scheduler_use = df.EulerAncestralDiscreteScheduler
+schedulers = [df.EulerDiscreteScheduler,
+    df.EulerAncestralDiscreteScheduler,
+    df.DDIMScheduler,
+    df.DDPMScheduler,
+    df.DPMSolverMultistepScheduler,
+    df.LMSDiscreteScheduler,
+    df.PNDMScheduler]
+    
 def sd_get_cached_models_list():
     models = []
 
@@ -26,7 +37,7 @@ def sd_get_cached_models_list():
     return models
 
 def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7.5, noise=.8, batch_size=1):
-    print(f'generate ({model_id}) {prompt}')
+    print(f'generate ({model_id} - {scheduler_sel}) {prompt}')
     
     if device == 'cpu':
         pipe = BasePipeline.from_pretrained(
@@ -39,7 +50,8 @@ def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7
             revision="fp16",
         )
         pipe.enable_xformers_memory_efficient_attention()
-
+    
+    pipe.scheduler = scheduler_use.from_config(pipe.scheduler.config)
     pipe = pipe.to(device)
     
     images = pipe(prompt=prompt, image=image, mask=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative, strength=noise, batch_size=batch_size)
@@ -48,7 +60,7 @@ def sd_generate(prompt, image=None, mask=None, negative='', steps=20, guidance=7
     
 def sd_generate_out(prompt, image, mask, negative='', steps=20, guidance=7.5, batch_size=1):
     model_id_inp = 'runwayml/stable-diffusion-inpainting'
-    print(f'generate out ({model_id_inp}) {prompt}')
+    print(f'generate out ({model_id_inp} - {scheduler_sel}) {prompt}')
     
     if device == 'cpu':
         pipe = StableDiffusionInpaintPipeline.from_pretrained(
@@ -62,6 +74,8 @@ def sd_generate_out(prompt, image, mask, negative='', steps=20, guidance=7.5, ba
         )
         pipe.enable_xformers_memory_efficient_attention()
 
+
+    pipe.scheduler = scheduler_use.from_config(pipe.scheduler.config)
     pipe = pipe.to(device)
     
     images = pipe(prompt=prompt, image=image, mask_image=mask, num_inference_steps=steps, guidance_scale=guidance, negative_prompt=negative, num_images_per_prompt=batch_size).images
@@ -82,4 +96,13 @@ def sd_change_model(mid):
         print('Error changing model to', mid, flush=True)
         
     return model_id
+    
+def sd_change_scheduler(scheduler):
+    global scheduler_sel
+    
+    idx = scheduler_names.index(scheduler)
+    scheduler_sel = scheduler
+    scheduler_use = schedulers[idx]
+    
+    return scheduler
     

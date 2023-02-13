@@ -227,6 +227,9 @@ function generateMaskImage() {
 }
 
 function draw() {
+    var pansX = parseInt(panX/scale);
+    var pansY = parseInt(panY/scale);
+    
     viewportCtx.globalCompositeOperation = "source-over"
     
 	// Set background color
@@ -234,19 +237,16 @@ function draw() {
 
 	// Draw background
 	viewportCtx.fillRect(0, 0, viewport.width/scale, viewport.height/scale);
-
 	
 	// Draw grid
 	viewportCtx.lineWidth = 1/scale;
-
-	// Set line color
-	viewportCtx.strokeStyle = "#55555588";
+	
 	// Reset line dash pattern
 	viewportCtx.setLineDash([]);
 
-    var pansX = parseInt(panX/scale);
-    var pansY = parseInt(panY/scale);
-    
+	// Set line color
+	viewportCtx.strokeStyle = "#55555588";
+
 	// Draw vertical lines
 	for (var x = pansX%gridSize; x < viewport.width/scale; x += gridSize) {
         viewportCtx.beginPath();
@@ -262,6 +262,50 @@ function draw() {
         viewportCtx.lineTo(viewport.width/scale, y);
         viewportCtx.stroke();
 	}
+	
+	// display render size
+	viewportCtx.strokeStyle = "#FFF";
+	viewportCtx.fillStyle = "#FFF";
+	viewportCtx.lineWidth = 1;
+	
+    viewportCtx.font = "16px Arial";
+	var caption = renderBoxWidth+'';
+    var textWidth = viewportCtx.measureText(caption).width;
+    var textX = pansX + (renderBoxWidth - textWidth) / 2;
+    viewportCtx.fillText(caption, textX, pansY-15);
+	// width
+	viewportCtx.beginPath();
+	viewportCtx.moveTo(pansX, pansY-25);
+	viewportCtx.lineTo(pansX, pansY-15);
+	viewportCtx.moveTo(pansX, pansY-20);
+	viewportCtx.lineTo(textX-10, pansY-20);
+	viewportCtx.moveTo(textX+textWidth+10, pansY-20);
+	viewportCtx.lineTo(pansX+renderBoxWidth, pansY-20);
+	viewportCtx.moveTo(pansX+renderBoxWidth, pansY-25);
+	viewportCtx.lineTo(pansX+renderBoxWidth, pansY-15);
+	viewportCtx.stroke();
+	// height
+	var caption = renderBoxHeight+'';
+    var textWidth = viewportCtx.measureText(caption).width;
+    var textX = pansX - textWidth - 15;
+    viewportCtx.fillText(caption, textX, pansY+renderBoxHeight/2+5);
+	
+	viewportCtx.beginPath();
+	viewportCtx.moveTo(pansX-25, pansY);
+	viewportCtx.lineTo(pansX-15, pansY);
+	viewportCtx.moveTo(pansX-20, pansY);
+	viewportCtx.lineTo(pansX-20, pansY+renderBoxHeight/2 -15);
+	viewportCtx.moveTo(pansX-20, pansY+renderBoxHeight/2 +15);
+	viewportCtx.lineTo(pansX-20, pansY+renderBoxHeight);
+	viewportCtx.moveTo(pansX-25, pansY+renderBoxHeight);
+	viewportCtx.lineTo(pansX-15, pansY+renderBoxHeight);
+	viewportCtx.stroke();
+	
+	// display scale
+	var caption = parseInt(scale*100)+'%';
+    var textWidth = viewportCtx.measureText(caption).width;
+    var textX = pansX - textWidth - 15;
+    viewportCtx.fillText(caption, textX, pansY-12);
 	
 	// Draw layers onto canvas
 	for (let lyr of lyrMgr.layers) {

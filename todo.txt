@@ -25,7 +25,7 @@ Todo (in no particular order)
 28. change brush opacity.
 29. brush shapes.
 30. brush textures.
-32. scale image/layer. use model? stabilityai/sd-x2-latent-upscaler
+32. scale image/layer using model? stabilityai/sd-x2-latent-upscaler
 33. clone tool.
 34. add a close up clause to generate zoomed-in the masked area.
 36. select multiple layer. how would different operations work?
@@ -37,4 +37,6 @@ Todo (in no particular order)
 45. tool - fill
 47. rotate layer
 48. way to add new models
-49. 
+49. shift scale to maintain aspect ratio
+50. mask displaying using selected like boundry?
+51. 

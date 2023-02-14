@@ -177,6 +177,25 @@ class LayerManager {
         }
     }
     
+	// change location and size (scaling) of the current layer
+	setCurrentTo(x, y, w, h) {
+		if (w<=0 || h<=0) return;
+		
+		var lyr = this.currentLayer;
+        var cvs = new OffscreenCanvas(w, h);
+        var ctx = cvs.getContext('2d');
+		
+		ctx.drawImage(lyr.canvas, 0, 0, w, h);
+		
+		lyr.x = x;
+		lyr.y = y;
+		lyr.canvas = cvs;
+		lyr.ctx = ctx;
+		
+		this.currentCanvas = cvs;
+		this.currentCtx = ctx;
+	}
+	
     resizeLayerBy(lyr, dw, dh) {
         if (lyr.canvas.width+dw <= 0 || lyr.canvas.height+dh <= 0) return;
         // backup drawing

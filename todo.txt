@@ -26,7 +26,6 @@ Todo (in no particular order)
 28. change brush opacity.
 29. brush shapes.
 30. brush textures.
-31. transform layer.
 32. scale image/layer. use model? stabilityai/sd-x2-latent-upscaler
 33. clone tool.
 34. add a close up clause to generate zoomed-in the masked area.
@@ -38,4 +37,5 @@ Todo (in no particular order)
 41. option to use inpainting models
 42. create/use Layer class
 45. tool - fill
-47. 
+47. rotate layer
+48. 

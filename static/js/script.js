@@ -19,7 +19,7 @@ let handleRadius = 10;
 let handleRadius2 = handleRadius*handleRadius;
 let pickRadius = 5;
 
-let handleMouse = 0; // 0: None, 1: Top, 2: Right, 3: Bottom, 4: Left
+let handleMouse = 0; // 0: None, 1: Top/top-left, 2: Right, 3: Bottom, 4: Left
 let pickMouse = 0;
 
 let boundsLineWidth = 1;
@@ -46,6 +46,10 @@ viewport.height = parent.offsetHeight-25; // padding
 // Get canvas context
 var viewportCtx = viewport.getContext("2d");
 
+// create glass canvas ... top most rendering to display UI elements
+var glassCanvas =  new OffscreenCanvas(viewport.width, viewport.height);
+var glassCtx = glassCanvas.getContext("2d");
+
 var lyrMgr = new LayerManager(renderBoxWidth, renderBoxHeight, brushColor, maskColor);
 
 var prevX = 0;
@@ -60,6 +64,7 @@ var masking = false;
 var erasing = false;
 var moving = false;
 var boxing = false;
+var scaling = false;
 
 function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
@@ -153,6 +158,8 @@ function setCurrentTool(tool) {
 	
 	if (tool==='mask')
 		autoMaskEnabled = false;
+	
+	draw();
 }
 
 function imagesRendered(urls, batch_size) {
@@ -263,42 +270,56 @@ function draw() {
         viewportCtx.stroke();
 	}
 	
-	// display render size
+	// display render/layer size
 	viewportCtx.strokeStyle = "#FFF";
 	viewportCtx.fillStyle = "#FFF";
 	viewportCtx.lineWidth = 1;
 	
+	x = pansX
+	y = pansY
+	w = 0
+	h = 0
+	if (currentTool === 'layer') {
+		x += lyrMgr.currentLayer.x
+		y += lyrMgr.currentLayer.y
+		w = lyrMgr.currentLayer.canvas.width
+		h = lyrMgr.currentLayer.canvas.height
+	} else {
+		w = renderBoxWidth
+		h = renderBoxHeight
+	}
+		
     viewportCtx.font = "16px Arial";
-	var caption = renderBoxWidth+'';
+	var caption = w+'';
     var textWidth = viewportCtx.measureText(caption).width;
-    var textX = pansX + (renderBoxWidth - textWidth) / 2;
-    viewportCtx.fillText(caption, textX, pansY-15);
+    var textX = x + (w - textWidth) / 2;
+    viewportCtx.fillText(caption, textX, y-15);
 	// width
 	viewportCtx.beginPath();
-	viewportCtx.moveTo(pansX, pansY-25);
-	viewportCtx.lineTo(pansX, pansY-15);
-	viewportCtx.moveTo(pansX, pansY-20);
-	viewportCtx.lineTo(textX-10, pansY-20);
-	viewportCtx.moveTo(textX+textWidth+10, pansY-20);
-	viewportCtx.lineTo(pansX+renderBoxWidth, pansY-20);
-	viewportCtx.moveTo(pansX+renderBoxWidth, pansY-25);
-	viewportCtx.lineTo(pansX+renderBoxWidth, pansY-15);
+	viewportCtx.moveTo(x, y-25);
+	viewportCtx.lineTo(x, y-15);
+	viewportCtx.moveTo(x, y-20);
+	viewportCtx.lineTo(textX-10, y-20);
+	viewportCtx.moveTo(textX+textWidth+10, y-20);
+	viewportCtx.lineTo(x+w, y-20);
+	viewportCtx.moveTo(x+w, y-25);
+	viewportCtx.lineTo(x+w, y-15);
 	viewportCtx.stroke();
 	// height
-	var caption = renderBoxHeight+'';
+	var caption = h+'';
     var textWidth = viewportCtx.measureText(caption).width;
-    var textX = pansX - textWidth - 15;
-    viewportCtx.fillText(caption, textX, pansY+renderBoxHeight/2+5);
+    var textX = x - textWidth - 15;
+    viewportCtx.fillText(caption, textX, y+h/2+5);
 	
 	viewportCtx.beginPath();
-	viewportCtx.moveTo(pansX-25, pansY);
-	viewportCtx.lineTo(pansX-15, pansY);
-	viewportCtx.moveTo(pansX-20, pansY);
-	viewportCtx.lineTo(pansX-20, pansY+renderBoxHeight/2 -15);
-	viewportCtx.moveTo(pansX-20, pansY+renderBoxHeight/2 +15);
-	viewportCtx.lineTo(pansX-20, pansY+renderBoxHeight);
-	viewportCtx.moveTo(pansX-25, pansY+renderBoxHeight);
-	viewportCtx.lineTo(pansX-15, pansY+renderBoxHeight);
+	viewportCtx.moveTo(x-25, y);
+	viewportCtx.lineTo(x-15, y);
+	viewportCtx.moveTo(x-20, y);
+	viewportCtx.lineTo(x-20, y+h/2 -15);
+	viewportCtx.moveTo(x-20, y+h/2 +15);
+	viewportCtx.lineTo(x-20, y+h);
+	viewportCtx.moveTo(x-25, y+h);
+	viewportCtx.lineTo(x-15, y+h);
 	viewportCtx.stroke();
 	
 	// display scale
@@ -326,8 +347,55 @@ function draw() {
             if (pickMouse > 0 || handleMouse === 4) x += dx;
 			if (pickMouse > 0 || handleMouse === 1) y += dy;
         }
-		viewportCtx.drawImage(lyr.canvas, x, y);
+		// if scaling draw scaled layer
+		if (scaling && handleMouse>0 && lyrMgr.currentLayer===lyr) {
+			var lw = lyr.canvas.width;
+			var lh = lyr.canvas.height;
+			var dx = (prevX-origX)/scale;
+			var dy = (prevY-origY)/scale;
+			if (handleMouse===1 || handleMouse===4) {
+				x += dx;
+				lw -= dx;
+			}
+			if (handleMouse===1 || handleMouse===2) {
+				y += dy;
+				lh -= dy;
+			}
+			if (handleMouse===3 || handleMouse===4) {
+				lh += dy;
+			}
+			if (handleMouse===3 || handleMouse===2) {
+				lw += dx;
+			}
+			
+			viewportCtx.drawImage(lyr.canvas, x, y, lw, lh);
+		}
+		else viewportCtx.drawImage(lyr.canvas, x, y);
+		
 		viewportCtx.globalAlpha = 1;
+	}
+	
+	// display scale holders
+	if (currentTool === 'layer' && !scaling) {
+		viewportCtx.strokeStyle = "#000";
+		viewportCtx.fillStyle = "#FFF";
+		viewportCtx.lineWidth = 1/scale;
+		
+		var x = pansX + lyrMgr.currentLayer.x;
+		var y = pansY + lyrMgr.currentLayer.y;
+		var w = lyrMgr.currentCanvas.width;
+		var h = lyrMgr.currentCanvas.height;
+		var hw = handleRadius*2/scale;
+		
+		if (handleMouse===1) viewportCtx.fillRect(x, y, hw, hw);
+		else if (handleMouse===2) viewportCtx.fillRect(x+w-hw, y, hw, hw);
+		else if (handleMouse===3) viewportCtx.fillRect(x+w-hw, y+h-hw, hw, hw);
+		else if (handleMouse===4) viewportCtx.fillRect(x, y+h-hw, hw, hw);
+		
+		viewportCtx.strokeRect(x, y, hw, hw);
+		viewportCtx.strokeRect(x+w-hw, y, hw, hw);
+		viewportCtx.strokeRect(x+w-hw, y+h-hw, hw, hw);
+		viewportCtx.strokeRect(x, y+h-hw, hw, hw);
 	}
 	
 	// render box
@@ -352,7 +420,7 @@ function draw() {
     pointerWidth *= scale / 2.0;
     
     // draw render edges, handles and brush
-    if (!spacebarDown) {
+    if (!spacebarDown && currentTool != 'layer') {
         // alternating black and white dashes
         for (var i=0; i<2; i++) {
             var le = pansX; // left edge
@@ -442,7 +510,7 @@ function draw() {
 
 // Set up mousedown event listener
 viewport.addEventListener("mousedown", function(e) {
-	panning = drawing = erasing = masking = moving = boxing = false;
+	panning = drawing = erasing = masking = moving = boxing = scaling = false;
 
     prevX = e.offsetX;
     prevY = e.offsetY;
@@ -499,7 +567,11 @@ viewport.addEventListener("mousedown", function(e) {
 		mlyr.ctx.fill();
 	} else if ((pickMouse > 0 || handleMouse > 0) && currentTool === 'move') {
 		boxing = true;
-	} else if (e.button === 0 && currentTool === 'move' && (lyrMgr.currentLayer.name != 'brush' && lyrMgr.currentLayer.name != 'mask')) {
+	} else if (e.button === 0 && currentTool === 'layer' && (lyrMgr.currentLayer.name != 'brush' && lyrMgr.currentLayer.name != 'mask') && handleMouse>0) {
+        scaling = true;
+        origX = prevX;
+        origY = prevY;
+	} else if (e.button === 0 && currentTool === 'layer' && (lyrMgr.currentLayer.name != 'brush' && lyrMgr.currentLayer.name != 'mask')) {
         moving = true;
         origX = lyrMgr.currentLayer.x;
         origY = lyrMgr.currentLayer.y;
@@ -507,6 +579,10 @@ viewport.addEventListener("mousedown", function(e) {
 	
     draw();
 });
+
+function isPointInRect(px, py, x, y, w, h) {
+	return px>=x && py>=y && px<=x+w && py<=y+h;
+}
 
 // Set up mousemove event listener
 viewport.addEventListener("mousemove", function(e) {
@@ -608,7 +684,7 @@ viewport.addEventListener("mousemove", function(e) {
         
         lyrMgr.currentLayer.x += dx/scale;
         lyrMgr.currentLayer.y += dy/scale;
-    } else { // draw handles
+    } else if (currentTool==="move") { // draw handles
         var w = renderBoxWidth;
         var h = renderBoxHeight;
         
@@ -630,7 +706,22 @@ viewport.addEventListener("mousemove", function(e) {
             else if(mx>=-prs && mx<w+prs && Math.abs(my-h)<=prs) pickMouse = 3;
             else if(my>=-prs && my<h+prs && Math.abs(mx-w)<=prs) pickMouse = 4;
         }
-    }
+    } else if (currentTool==="layer" && !scaling) { // draw handles
+        var mx = x/scale-pansX;
+        var my = y/scale-pansY;
+        
+		var x0 = lyrMgr.currentLayer.x;
+		var y0 = lyrMgr.currentLayer.y;
+		var w = lyrMgr.currentCanvas.width;
+		var h = lyrMgr.currentCanvas.height;
+		var hw = handleRadius*2/scale;
+		
+        handleMouse = 0;
+		if (isPointInRect(mx, my, x0, y0, hw, hw)) handleMouse = 1;
+		else if (isPointInRect(mx, my, x0+w-hw, y0, hw, hw)) handleMouse = 2;
+		else if (isPointInRect(mx, my, x0+w-hw, y0+h-hw, hw, hw)) handleMouse = 3;
+		else if (isPointInRect(mx, my, x0, y0+h-hw, hw, hw)) handleMouse = 4;
+	}
     
     if (panning)
         viewport.style.cursor = 'grabbing';
@@ -697,10 +788,34 @@ viewport.addEventListener("mouseup", function(e) {
 		} else if (moving) {
             if (!(origX===lyrMgr.currentLayer.x && origY===lyrMgr.currentLayer.y))
                 undo.add(new LayerMovedChange(lyrMgr.currentLayer, origX, origY, lyrMgr.currentLayer.x, lyrMgr.currentLayer.y));
-        }
-    }
+		} else if (scaling) {
+			var lyr = lyrMgr.currentLayer;
+			var lx = lyr.x;
+			var ly = lyr.y;
+			var lw = lyr.canvas.width;
+			var lh = lyr.canvas.height;
+			var dx = (prevX-origX)/scale;
+			var dy = (prevY-origY)/scale;
+			if (handleMouse===1 || handleMouse===4) {
+				lx += dx;
+				lw -= dx;
+			}
+			if (handleMouse===1 || handleMouse===2) {
+				ly += dy;
+				lh -= dy;
+			}
+			if (handleMouse===3 || handleMouse===4) {
+				lh += dy;
+			}
+			if (handleMouse===3 || handleMouse===2) {
+				lw += dx;
+			}
+			
+			lyrMgr.setCurrentTo(lx, ly, lw, lh);
+		}
+	}
     // Reset flags
-    panning = drawing = erasing = masking = moving = boxing = false;
+    panning = drawing = erasing = masking = moving = boxing = scaling = false;
     draw();
 });
 

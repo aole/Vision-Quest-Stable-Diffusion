@@ -18,8 +18,8 @@
 		<HR>
 		<div class="container-slider">
 			<label for="steps-slider">Steps</label>
-			<input type=range id="steps-slider" min=1 max=150 value=30></input>
-			<label id="steps-label">30</label>
+			<input type=range id="steps-slider" min=1 max=150 value=20></input>
+			<label id="steps-label">20</label>
 		</div>
 		<div class="container-slider">
 			<label for="guidance-slider">Prompt</label>
@@ -75,6 +75,10 @@
 			</div>
 			<div class="toolbar-button" id="save-button" onclick="saveImage()">
 			  <i class="fas fa-save"></i>
+			</div>
+			<div class="vertical-toolbar-separator"></div>
+			<div class="toolbar-button draw-group" id="layer-button" data-tool="layer">
+			  <i class="fas fa-expand-arrows-alt"></i>
 			</div>
 		</div>
 		<div id="center-right">

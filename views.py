@@ -1,6 +1,6 @@
 from flask import Blueprint, request, render_template, Response, jsonify
 from stable_diffusion import sd_generate, sd_generate_out, sd_get_model_id, sd_change_model, sd_change_scheduler, sd_get_cached_models_list, scheduler_names, scheduler_sel
-import time, base64
+import time, base64, os
 from PIL import Image, ImageFilter
 from io import BytesIO
 import numpy as np
@@ -34,6 +34,9 @@ def testfn():
 def save_renders(images, orig=None, mask=None):
     print(f'Num images generated: {len(images)}', flush=True)
     
+    if not os.path.exists('static/images'):
+        os.makedirs('static/images')
+        
     current_time = datetime.datetime.now()
     files = []
     for i, image in enumerate(images):
@@ -159,6 +162,9 @@ def save_image():
     _, img_data = request.form.get('image').split(',')
     image = Image.open(BytesIO(base64.b64decode(img_data)))
 
+    if not os.path.exists('static/saves'):
+        os.makedirs('static/saves')
+        
     current_time = datetime.datetime.now()
     image.save('static/saves/image'+current_time.strftime("%Y%m%d_%H%M%S")+'.png')
 

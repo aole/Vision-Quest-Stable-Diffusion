@@ -70,6 +70,15 @@ function distance2(x1, y1, x2, y2) {
     return Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2);
 }
 
+const opacity_slider = document.getElementById('opacity-slider');
+opacity_slider.oninput = function() {
+  var opacity = parseInt(opacity_slider.value);
+  lyrMgr.currentLayer.opacity = opacity;
+  document.getElementById('opacity-label').innerText = opacity_slider.value+'%';
+  
+  draw();
+}
+
 const steps_slider = document.getElementById('steps-slider');
 steps_slider.oninput = function() {
   document.getElementById('steps-label').innerText = steps_slider.value;
@@ -186,8 +195,11 @@ function generateModelImage() {
     modelCtx.globalCompositeOperation = "source-over"
 	modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
 	for (let lyr of lyrMgr.layers) {
-		if (lyr.name === 'mask' || !lyr.visible)
-			continue;
+		if (lyr.name === 'mask' || !lyr.visible || lyr.opacity===0) continue;
+        
+        var opacity = lyr.opacity / 100.0;
+        modelCtx.globalAlpha = opacity;
+    
 		modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
 	}
 	
@@ -330,11 +342,12 @@ function draw() {
 	
 	// Draw layers onto canvas
 	for (let lyr of lyrMgr.layers) {
-        if (!lyr.visible) continue;
-		if (lyr.name === 'mask') {
-			if (autoMaskEnabled) continue;
-			viewportCtx.globalAlpha = 0.5;
-		}
+        if (!lyr.visible || lyr.opacity===0) continue;
+		if (lyr.name === 'mask' && autoMaskEnabled) continue;
+		
+        var opacity = lyr.opacity / 100.0;
+		viewportCtx.globalAlpha = opacity;
+        
         var x = pansX + lyr.x;
         var y = pansY + lyr.y;
         if (boxing && (lyr.name === 'mask' || lyr.name === 'brush')) {
@@ -371,9 +384,9 @@ function draw() {
 			viewportCtx.drawImage(lyr.canvas, x, y, lw, lh);
 		}
 		else viewportCtx.drawImage(lyr.canvas, x, y);
-		
-		viewportCtx.globalAlpha = 1;
 	}
+    
+	viewportCtx.globalAlpha = 1;
 	
 	// display scale holders
 	if (currentTool === 'layer' && !scaling) {
@@ -821,6 +834,10 @@ viewport.addEventListener("mouseup", function(e) {
 
 lyrMgr.layerCtrl.addEventListener("change", function(e) {
     lyrMgr.selectLayer(e.target.value);
+    
+    opacity_slider.value = lyrMgr.currentLayer.opacity;
+    document.getElementById('opacity-label').innerText = lyrMgr.currentLayer.opacity+'%';
+    
     draw();
 });
 

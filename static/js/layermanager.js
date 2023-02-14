@@ -20,6 +20,7 @@ class LayerManager {
         this.maskCanvas.width = renderBoxWidth;
         this.maskCanvas.height = renderBoxHeight;
         this.maskLayer = this.addLayer(this.maskCanvas, "mask");
+        this.maskLayer.opacity = 50;
     }
     
     getBrushLayer() { return this.brushLayer; }
@@ -27,7 +28,7 @@ class LayerManager {
     
     addLayer(canvas, name, position=-1, refresh=true) {
         var ctx = canvas.getContext('2d');
-        var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0, visible: true}
+        var lyr = {name: name, canvas: canvas, ctx: ctx, x: 0, y: 0, visible: true, opacity: 100}
         if (position===-1)
             this.layers.push(lyr);
         else
@@ -245,7 +246,11 @@ class LayerManager {
         modelCtx.globalCompositeOperation = "source-over"
         modelCtx.clearRect(0, 0, modelCanvas.width, modelCanvas.height);
         for (let lyr of this.layers) {
-            if (lyr.name === 'mask' || !lyr.visible) continue;
+            if (lyr.name === 'mask' || !lyr.visible || lyr.opacity===0) continue;
+            
+            var opacity = lyr.opacity / 100.0;
+            modelCtx.globalAlpha = opacity;
+        
             modelCtx.drawImage(lyr.canvas, lyr.x, lyr.y);
         }
         var dataURL = modelCanvas.toDataURL();

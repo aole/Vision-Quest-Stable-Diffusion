@@ -30,7 +30,6 @@ Todo (in no particular order)
 34. add a close up clause to generate zoomed-in the masked area.
 36. select multiple layer. how would different operations work?
 37. optional layers? only one of these layers is visible at a time. When new rendering is done, all previous optional layers are converted to normal layers.
-38. layer opacity
 39. cut, copy, paste using mask
 40. tooltips
 41. option to use inpainting models
